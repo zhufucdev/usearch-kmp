@@ -158,7 +158,7 @@ mavenPublishing {
     publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
     signAllPublications()
 
-    coordinates(Library.namespace, "kotlin", "0.1.0")
+    coordinates(Library.namespace, "core", "0.0.1")
     pom {
         name = "USearch KMP"
         description = "Kotlin Multiplatform binding for USearch."
