@@ -1,8 +1,5 @@
 package usearch
 
-import kotlinx.cinterop.ExperimentalForeignApi
-
-@OptIn(ExperimentalForeignApi::class)
 abstract class DelegatedList<T>(override val size: Int) : List<T> {
     abstract override fun get(index: Int): T
 

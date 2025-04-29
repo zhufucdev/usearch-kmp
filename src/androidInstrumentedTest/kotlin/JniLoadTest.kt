@@ -1,9 +1,9 @@
 import org.junit.Test
-import usearch.NativeBridge
+import usearch.platformLoadLib
 
 class JniLoadTest {
     @Test
     fun shouldOutputPlatformName() {
-        NativeBridge
+        platformLoadLib()
     }
 }

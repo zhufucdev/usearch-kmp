@@ -318,3 +318,4 @@ gradle-app.setting
 *.hprof
 
 # End of https://www.toptal.com/developers/gitignore/api/linux,windows,macos,gradle,kotlin,visualstudiocode,jetbrains+all,rust,eclipse
+/src/cppMain/bridging/

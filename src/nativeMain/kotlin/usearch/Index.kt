@@ -21,7 +21,7 @@ actual class Index {
         }
         errorScoped {
             // somehow the C implementation doesn't reserve at init time
-            usearch_reserve(inner.asCPointer(), 10u, err)
+            usearch_reserve(inner.asCPointer(), INITIAL_CAPACITY.toULong(), err)
         }
 
         cleaner = createCleaner(inner) {
@@ -112,5 +112,9 @@ actual class Index {
                 },
             )
         }
+    }
+
+    actual companion object {
+        actual val INITIAL_CAPACITY: Long = 5L
     }
 }

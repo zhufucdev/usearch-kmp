@@ -11,6 +11,9 @@ abstract class CMakeConfigureForKonanTask : CMakeConfigureTask() {
     @get:Input
     abstract val target: Property<KonanTarget>
 
+    @get:Input
+    abstract val buildType: Property<String>
+
     private fun readLocalProperties(): Properties {
         val p = Properties()
         File(project.rootDir, "local.properties").inputStream().use {
@@ -20,17 +23,18 @@ abstract class CMakeConfigureForKonanTask : CMakeConfigureTask() {
     }
 
     init {
-        def.value(target.map { target ->
+        buildType.set("RELEASE")
+
+        def.value(target.zip(buildType) { t, b -> t to b }.map { (target, buildType) ->
             buildMap {
                 put(
-                    "CMAKE_SYSTEM_PROCESSOR", when (target.architecture) {
+                    "CMAKE_SYSTEM_PROCESSOR",
+                    when (target.architecture) {
                         Architecture.ARM64, Architecture.ARM32 -> "arm"
                         Architecture.X64, Architecture.X86 -> "x86"
                     },
                 )
-                if (Library.cmakeBuildDebug) {
-                    put("CMAKE_BUILD_TYPE", "DEBUG")
-                }
+                put("CMAKE_BUILD_TYPE", buildType)
 
                 when (target) {
                     KonanTarget.ANDROID_ARM32,

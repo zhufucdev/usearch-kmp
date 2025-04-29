@@ -10,4 +10,8 @@ expect class Index(options: IndexOptions) {
     fun add(key: ULong, f32Vector: FloatArray)
     fun add(key: ULong, f64Vector: DoubleArray)
     fun search(query: FloatArray, count: Int): Matches
+
+    companion object {
+        val INITIAL_CAPACITY: Long
+    }
 }

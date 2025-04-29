@@ -83,10 +83,11 @@ fun Project.cmakeJvm() {
     }
 }
 
-fun KotlinNativeTarget.cmakeNative() {
+fun KotlinNativeTarget.cmakeNative(configure: CMakeConfigureForKonanTask.() -> Unit = {}) {
     val taskName = konanTarget.bigCamelName
     val (_, _, cmakeBuildTask, binary) = install(project, konanTarget) {
         buildStaticLibs.set(true)
+        configure(this)
     }
 
     val defFileTask = project.task("generateDef$taskName", DefFileTask::class) {

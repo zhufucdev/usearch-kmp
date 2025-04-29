@@ -3,7 +3,6 @@
 import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.KotlinMultiplatform
 import com.vanniktech.maven.publish.SonatypeHost
-import org.gradle.kotlin.dsl.named
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
@@ -13,6 +12,14 @@ plugins {
     alias(libs.plugins.dokka)
     alias(libs.plugins.mavenPublisher)
 }
+
+val jniGenerator = tasks.create("generateJniHeaders", JniHeaderTask::class) {
+    sourceFiles.set(fileTree("src/bridgeMain/java") {
+        include("**/*.java")
+    })
+    headerOutputDir.value(cmake.sourceFolder.dir("bridging"))
+}
+
 
 android {
     namespace = Library.namespace
@@ -97,6 +104,9 @@ kotlin {
             }
         }
         val jvmCommonMain by getting {
+            dependencies {
+                implementation(files(jniGenerator.classOutputDir))
+            }
         }
         val nativeMain by getting {
         }
