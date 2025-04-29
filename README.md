@@ -1,93 +1,26 @@
-# A template for Kotlin multiplatform projects that interoperate with Rust
+# USearch KMP
 
-This is a template for a Kotlin Multiplatform project, thoughtfully designed to seamlessly incorporate Rust within the
-codebase.
+A Kotlin Multiplatform binding to the great project of [USearch](https://github.com/unum-cloud/usearch),
+a similarity search & clustering engine for vectors.
 
-## Structure
+![android](https://camo.githubusercontent.com/6d3fa15a839b018358f823f7439bedd68ac5d97120a9f581e746d8a81e43ba86/687474703a2f2f696d672e736869656c64732e696f2f62616467652f2d616e64726f69642d3645444238442e7376673f7374796c653d666c6174)
+![ios](https://camo.githubusercontent.com/84f060f08f4b60116d3f2740fa7fc7127fa990a9dc4c200aea08a5963d97b94f/687474703a2f2f696d672e736869656c64732e696f2f62616467652f2d696f732d4344434443442e7376673f7374796c653d666c6174)
+![jvm](https://camo.githubusercontent.com/48140edbc0bf4c032d4776ec8ea77d25b7970d3611a36a9926488205eeffda45/687474703a2f2f696d672e736869656c64732e696f2f62616467652f2d6a766d2d4442343133442e7376673f7374796c653d666c6174)
+![linux](https://camo.githubusercontent.com/c2b504b566c86ee9076173e463766aac0fb1bab07a0c7f1aad6f2edc57027fdc/687474703a2f2f696d672e736869656c64732e696f2f62616467652f2d6c696e75782d3244334636432e7376673f7374796c653d666c6174)
+![macos](https://camo.githubusercontent.com/9fe6c59ec72739ee7041ec5808fe8a48b538cc18c3fa7906c8b54205c966f3ea/687474703a2f2f696d672e736869656c64732e696f2f62616467652f2d6d61636f732d3131313131312e7376673f7374796c653d666c6174)
+![windows](https://camo.githubusercontent.com/7981e11c5f07de2906c827d4d659894344ca6d3e0fd911c958cd607c40c02772/687474703a2f2f696d672e736869656c64732e696f2f62616467652f2d77696e646f77732d3444373643442e7376673f7374796c653d666c6174)
 
-This project is structured in the following way:
 
-- The Rust code is managed using Cargo, and is placed in the `rustMain` directory.
-  Note that this is not a Kotlin MP sourceSet. It is just a way to organize code for the better.
-- Every sourceSet can be used to store the code relative to the specific platform as usual.
+> [!IMPORTANT]
+> This library is currently under development.
+> Partiality of the official API is prioritized for personal reasons.
+> Contribution is welcome if you feel like something important is missing.
 
-Gradle is used as the main build tool for the whole project.
-The Cargo commands that must be used for building the Rust library are encapsulated in buildSrc
-as a plugin `crab-mulitiplatform` too.
+## Usage
 
-### Interoperability in Kotlin/Native
-
-Here's how it is possible to use Rust in Kotlin thanks to this configuration:
-
-- The `Cargo.toml` file is used to store the configuration of the Rust project.
-  Pay attention to the line `crate_type = ["cdylib"]`.
-  This means that the Rust project does not contain a main entrypoint, but a collection of possible APIs.
-- Our Rust project is a library: the file `lib.rs` can expose some operations and structure.
-  In this case, just a simple `plus` method is implemented.
-  The `#[no_mangle]` and `pub extern "C"` lines are important, but we won't explain their meaning in this README.
-- Kotlin is unable to directly use the Rust library,
-  but we can create a header file (`.h`) using [cbindgen](https://github.com/mozilla/cbindgen) and our Rust code.
-  cbindgen is, in fact, able to create C/C++11 headers for Rust libraries which expose a public C API.
-  The `cbindgen.toml` file in the root contains some configuration for the tool.
-- The `nativeInterop` folder is used to automatically create a bridge between the Rust library and Kotlin Native.
-  using cinterop, a `.def` file is used to specify some configuration for the C compiler and linker.
-  Some configuration are also added in `build.gradle.kts`.
-  Check [C Interoperability](https://kotlinlang.org/docs/native-c-interop.html) for more info.
-- Some additional configuration are added to the `build.gradle.kts`.
-  Using `linkerOpts` the effective library (`.a` in Linux and macOS, `.lib ` in Windows) is linked during the build
-  process.
-  This could also be configured in the `.def` file, but I'm not doing it because
-  of [KT-48082 issue](https://youtrack.jetbrains.com/issue/KT-48082).
-- A corresponding `plus` function is automatically created by Kotlin and can be used in the native sourceSet.
-
-### Interoperability with Android & JVM
-
-- JVM and Android come with different JNI loading mechanisms, while the statically-linked binary is shared.
-  This brings a `jvmCommonMain` sources set, where the JNI method is declared as `external` and the platforms
-  both implements their own `platformLoadLib` procedure.
-- JVM implements a way of packing up commonly used binaries for macOS, Windows and Linux systems into the
-  jniResources directory, and unpacking to the temporary directory when loading.
-- Android packs up binaries for common ABIs in the jniLibs directory, and incorporates the corresponding
-  syscall to load.
-
-## Building and running the example
-
-It is possible to launch the example with the command of you specific platform:
-
-```shell
-gradle runDebugExecutableLinuxX64 # Linux
-gradle runDebugExecutableMacosX64 # MacOS
-gradle runDebugExecutableMingwX64 # Windows
-gradle jvmRun -DmainClass=HelloWorldKt --quiet # JVM
+This project is on Maven Central, which can be accessed as such:
+```kotlin
+dependencies {
+    implementation("com.zhufucdev.usearch:core:0.0.1")
+}
 ```
-
-For Android, refer to the androidInstrumentedTest, which should run via Android Studio or Intellij IDEA
-on a real phone or an emulator.
-
-The build is configured to automatically generate the Rust library artifacts when building the Kotlin Multiplatform
-project,
-and copying to platform specific locations as mentioned above.
-However, it is possible to manually generate them using the following command:
-
-```shell
-gradle cargoBuildRelease
-```
-
-The header file will also be generated inside the `target` folder.
-
-## Incorporating the template
-You can either use this project as a submodule or a standalone library.
-For personal reasons, this library is named as `vectoria`, which you can reverse in simple steps:
-
-- Modify fields under `buildSrc/src/main/kotlin/Library.kt`. Namespace is an android library and maven publish requirement. 
-- Change the `LIB_NAME` constant under `src/jvmCommonMain/kotlin/Lib.kt`, which is supposed to be
-the same as the one under `Library.kt`, which I failed to make dry enough, but whatever.
-- Package and lib name under `Cargo.toml`, same as above.
-- Either change the POM info in `build.gradle.kts` or remove the publishing block if you don't need it.
-- Project name under `settings.gradle.kts`.
-
-# Some Credits
-
-Started from [AngeloFilaseta](https://github.com/AngeloFilaseta)'s
-[template-for-kotlin-multiplatform-rust-interoperability](https://github.com/AngeloFilaseta/template-for-kotlin-multiplatform-rust-interoperability)
-repository.
