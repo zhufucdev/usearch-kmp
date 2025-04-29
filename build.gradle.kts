@@ -13,10 +13,11 @@ plugins {
     alias(libs.plugins.mavenPublisher)
 }
 
-val jniGenerator = tasks.create("generateJniHeaders", JniHeaderTask::class) {
-    sourceFiles.set(fileTree("src/bridgeMain/java") {
+val headerGenerator = tasks.create("generateJniHeaders", JniHeaderTask::class) {
+    classpath = files("src/jvmCommonMain/bridge")
+    source = fileTree(classpath.asPath) {
         include("**/*.java")
-    })
+    }
     headerOutputDir.value(cmake.sourceFolder.dir("bridging"))
 }
 
@@ -50,9 +51,10 @@ kotlin {
     androidTarget {
         publishLibraryVariants("release")
         compilations.all {
+            kotlinOptions.jvmTarget = "11"
             compileTaskProvider.configure {
                 compilerOptions {
-                    jvmTarget.set(JvmTarget.JVM_1_8)
+                    jvmTarget.set(JvmTarget.JVM_11)
                 }
             }
         }
@@ -104,8 +106,12 @@ kotlin {
             }
         }
         val jvmCommonMain by getting {
+            kotlin {
+                srcDir(headerGenerator.classpath.singleFile)
+            }
+
             dependencies {
-                implementation(files(jniGenerator.classOutputDir))
+                implementation(files(headerGenerator.destinationDirectory))
             }
         }
         val nativeMain by getting {
@@ -142,8 +148,11 @@ android {
 
 cmakeJvm()
 
-tasks.dokkaJavadoc {
-    enabled = false
+afterEvaluate {
+    tasks.withType<JavaCompile> {
+        sourceCompatibility = "11"
+        targetCompatibility = "11"
+    }
 }
 
 mavenPublishing {
