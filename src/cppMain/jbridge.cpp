@@ -37,7 +37,7 @@ JNIEXPORT jlong JNICALL Java_usearch_NativeBridge_usearch_1init
     usearch_error_t error = nullptr;
     auto init = usearch_init(reinterpret_cast<usearch_init_options_t *>(opts), &error);
     if (error) {
-        throw_runtime_error(env, error);
+        throw_usearch_exception(env, error);
         return 0;
     }
     return reinterpret_cast<jlong>(init);
@@ -55,7 +55,7 @@ JNIEXPORT void JNICALL Java_usearch_NativeBridge_usearch_1free
     usearch_error_t err = nullptr;
     usearch_free(p, &err);
     if (err) {
-        throw_runtime_error(env, err);
+        throw_usearch_exception(env, err);
     }
 }
 
@@ -65,7 +65,7 @@ JNIEXPORT jlong JNICALL Java_usearch_NativeBridge_usearch_1expansion_1add
     usearch_error_t err = nullptr;
     const auto r = usearch_expansion_add(p, &err);
     if (err) {
-        throw_runtime_error(env, err);
+        throw_usearch_exception(env, err);
         return 0;
     }
     return static_cast<jlong>(r);
@@ -77,7 +77,7 @@ JNIEXPORT void JNICALL Java_usearch_NativeBridge_usearch_1change_1expansion_1add
     usearch_error_t err = nullptr;
     usearch_change_expansion_add(p, new_value, &err);
     if (err) {
-        throw_runtime_error(env, err);
+        throw_usearch_exception(env, err);
     }
 }
 
@@ -87,7 +87,7 @@ JNIEXPORT jlong JNICALL Java_usearch_NativeBridge_usearch_1expansion_1search
     usearch_error_t err = nullptr;
     const auto r = usearch_expansion_search(p, &err);
     if (err) {
-        throw_runtime_error(env, err);
+        throw_usearch_exception(env, err);
     }
     return static_cast<jlong>(r);
 }
@@ -98,7 +98,7 @@ JNIEXPORT void JNICALL Java_usearch_NativeBridge_usearch_1change_1expansion_1sea
     usearch_error_t err = nullptr;
     usearch_change_expansion_search(p, new_value, &err);
     if (err) {
-        throw_runtime_error(env, err);
+        throw_usearch_exception(env, err);
     }
 }
 
@@ -109,7 +109,7 @@ JNIEXPORT jstring JNICALL Java_usearch_NativeBridge_usearch_1hardware_1accelerat
     usearch_error_t err = nullptr;
     const auto r = usearch_hardware_acceleration(p, &err);
     if (err) {
-        throw_runtime_error(env, err);
+        throw_usearch_exception(env, err);
         return nullptr;
     }
     return env->NewStringUTF(r);
@@ -125,7 +125,7 @@ JNIEXPORT void JNICALL Java_usearch_NativeBridge_usearch_1add_1f32
     auto result = p->add(key, buf);
     delete[] buf;
     if (!result) {
-        throw_runtime_error(env, result.error.release());
+        throw_usearch_exception(env, result.error.release());
     }
 }
 
@@ -140,7 +140,7 @@ JNIEXPORT void JNICALL Java_usearch_NativeBridge_usearch_1add_1f64
     usearch_add(p, key, buf, usearch_scalar_f64_k, &err);
     delete[] buf;
     if (err) {
-        throw_runtime_error(env, err);
+        throw_usearch_exception(env, err);
     }
 }
 
@@ -152,16 +152,40 @@ JNIEXPORT jlong JNICALL Java_usearch_NativeBridge_usearch_1search
     auto result = p->search(query_buf, count);
     delete[] query_buf;
     if (!result) {
-        throw_runtime_error(env, result.error.release());
+        throw_usearch_exception(env, result.error.release());
         return 0;
     }
     return reinterpret_cast<jlong>(new value_proxy<search_result_t>{std::move(result)});
 }
 
+
+JNIEXPORT jlong JNICALL Java_usearch_NativeBridge_usearch_1size
+(JNIEnv *env, jobject, jlong ptr) {
+    const auto p = reinterpret_cast<usearch_index_t *>(ptr);
+    usearch_error_t err = nullptr;
+    const auto size = usearch_size(p, &err);
+    if (err) {
+        throw_usearch_exception(env, err);
+    }
+    return static_cast<jlong>(size);
+}
+
+
+JNIEXPORT jlong JNICALL Java_usearch_NativeBridge_usearch_1capacity
+(JNIEnv *env, jobject, jlong ptr) {
+    const auto p = reinterpret_cast<usearch_index_t *>(ptr);
+    usearch_error_t err = nullptr;
+    const auto cap = usearch_capacity(p, &err);
+    if (err) {
+        throw_usearch_exception(env, err);
+    }
+    return static_cast<jlong>(cap);
+}
+
 JNIEXPORT jlong JNICALL Java_usearch_NativeBridge_usearch_1sresult_1key_1at
 (JNIEnv *env, jobject, jlong ptr, jint index) {
     const auto p = reinterpret_cast<value_proxy<search_result_t> *>(ptr);
-    if (p->inner.count < index) {
+    if (p->inner.count <= index) {
         throw_index_out_of_bounds(env, index);
         return 0;
     }
@@ -172,7 +196,7 @@ JNIEXPORT jlong JNICALL Java_usearch_NativeBridge_usearch_1sresult_1key_1at
 JNIEXPORT jfloat JNICALL Java_usearch_NativeBridge_usearch_1sresult_1distance_1at
 (JNIEnv *env, jobject, jlong ptr, jint index) {
     const auto p = reinterpret_cast<value_proxy<search_result_t> *>(ptr);
-    if (p->inner.count < index) {
+    if (p->inner.count <= index) {
         throw_index_out_of_bounds(env, index);
         return 0;
     }
@@ -185,14 +209,73 @@ JNIEXPORT jint JNICALL Java_usearch_NativeBridge_usearch_1sresult_1size
     return static_cast<jint>(p->inner.count);
 }
 
-
 JNIEXPORT void JNICALL Java_usearch_NativeBridge_usearch_1reserve
 (JNIEnv *env, jobject, jlong ptr, jlong capacity) {
     const auto p = reinterpret_cast<usearch_index_t *>(ptr);
     usearch_error_t err = nullptr;
     usearch_reserve(p, capacity, &err);
     if (err) {
-        throw_runtime_error(env, err);
+        throw_usearch_exception(env, err);
     }
+}
+
+JNIEXPORT void JNICALL Java_usearch_NativeBridge_usearch_1save_1file
+(JNIEnv *env, jobject, jlong ptr, jstring path) {
+    const auto p = reinterpret_cast<usearch_index_t *>(ptr);
+    usearch_error_t err = nullptr;
+    auto *path_buf = env->GetStringUTFChars(path, nullptr);
+    usearch_save(p, path_buf, &err);
+    if (err) {
+        throw_usearch_exception(env, err);
+    }
+    env->ReleaseStringUTFChars(path, path_buf);
+}
+
+JNIEXPORT void JNICALL Java_usearch_NativeBridge_usearch_1save_1buffer
+(JNIEnv *env, jobject, jlong ptr, jbyteArray buffer) {
+    const auto p = reinterpret_cast<usearch_index_t *>(ptr);
+    usearch_error_t err = nullptr;
+    const auto buffer_len = env->GetArrayLength(buffer);
+    const auto buffer_ptr = env->GetByteArrayElements(buffer, nullptr);
+
+    usearch_save_buffer(
+        p,
+        buffer_ptr,
+        buffer_len,
+        &err
+    );
+    if (err) {
+        throw_usearch_exception(env, err);
+    }
+    env->ReleaseByteArrayElements(buffer, buffer_ptr, JNI_COMMIT);
+}
+
+JNIEXPORT void JNICALL Java_usearch_NativeBridge_usearch_1load_1file
+(JNIEnv *env, jobject, jlong ptr, jstring path) {
+    const auto p = reinterpret_cast<usearch_index_t *>(ptr);
+    usearch_error_t err = nullptr;
+    auto *path_buf = env->GetStringUTFChars(path, nullptr);
+    usearch_load(p, path_buf, &err);
+    if (err) {
+        throw_usearch_exception(env, err);
+    }
+}
+
+JNIEXPORT void JNICALL Java_usearch_NativeBridge_usearch_1load_1buffer
+(JNIEnv *env, jobject, jlong ptr, jbyteArray buffer) {
+    const auto p = reinterpret_cast<usearch_index_t *>(ptr);
+    usearch_error_t err = nullptr;
+    const auto buffer_len = env->GetArrayLength(buffer);
+    const auto buffer_ptr = env->GetByteArrayElements(buffer, nullptr);
+    usearch_load_buffer(
+        p,
+        buffer_ptr,
+        buffer_len,
+        &err
+    );
+    if (err) {
+        throw_usearch_exception(env, err);
+    }
+    env->ReleaseByteArrayElements(buffer, buffer_ptr, JNI_COMMIT);
 }
 }

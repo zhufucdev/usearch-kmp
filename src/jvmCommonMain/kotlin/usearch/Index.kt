@@ -57,6 +57,28 @@ actual class Index(
         return Matches(p)
     }
 
+    actual val size: ULong
+        get() = NativeMethods.bridge.usearch_size(ptr).toULong()
+
+    actual val capacity: ULong
+        get() = NativeMethods.bridge.usearch_capacity(ptr).toULong()
+
+    actual fun loadFile(filePath: String) {
+        NativeMethods.bridge.usearch_load_file(ptr, filePath)
+    }
+
+    actual fun loadBuffer(buffer: ByteArray) {
+        NativeMethods.bridge.usearch_load_buffer(ptr, buffer)
+    }
+
+    actual fun saveFile(filePath: String) {
+        NativeMethods.bridge.usearch_save_file(ptr, filePath)
+    }
+
+    actual fun saveBuffer(buffer: ByteArray) {
+        NativeMethods.bridge.usearch_save_buffer(ptr, buffer)
+    }
+
     protected fun finalize() {
         NativeMethods.bridge.usearch_free(ptr)
     }

@@ -23,7 +23,7 @@ abstract class CMakeConfigureForKonanTask : CMakeConfigureTask() {
     }
 
     init {
-        buildType.set("RELEASE")
+        buildType.set("DEBUG")
 
         def.value(target.zip(buildType) { t, b -> t to b }.map { (target, buildType) ->
             buildMap {

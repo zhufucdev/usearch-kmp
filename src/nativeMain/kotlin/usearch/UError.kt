@@ -26,7 +26,9 @@ inline fun <T> errorScoped(block: (ErrorScope.() -> T)): T {
 
             override fun alloc(size: Long, align: Int): NativePointed = this@memScoped.alloc(size, align)
         })
-        err.value?.toKString()?.let(::error)
+        err.value?.toKString()?.let {
+            throw USearchException(it)
+        }
         return res
     }
 }

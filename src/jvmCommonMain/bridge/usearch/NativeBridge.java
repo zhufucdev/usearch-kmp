@@ -38,4 +38,16 @@ public class NativeBridge {
     public native int usearch_sresult_size(long ptr);
 
     public native void usearch_reserve(long ptr, long capacity);
+
+    public native long usearch_size(long ptr);
+
+    public native long usearch_capacity(long ptr);
+
+    public native void usearch_save_file(long ptr, String file_path);
+
+    public native void usearch_save_buffer(long ptr, byte[] buffer);
+
+    public native void usearch_load_file(long ptr, String file_path);
+
+    public native void usearch_load_buffer(long ptr, byte[] buffer);
 }

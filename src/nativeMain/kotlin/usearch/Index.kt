@@ -16,7 +16,8 @@ actual class Index {
     actual constructor(options: IndexOptions) {
         val opts = options.native()
         errorScoped {
-            inner = usearch_init(opts.getPointer(this), err)?.asStableRef() ?: error("No error returned while init ptr is null.")
+            inner = usearch_init(opts.getPointer(this), err)?.asStableRef()
+                ?: error("No error returned while init ptr is null.")
             _metricKind = options.metric
         }
         errorScoped {
@@ -64,6 +65,16 @@ actual class Index {
             _metricKind = value
         }
 
+    actual val size: ULong
+        get() = errorScoped {
+            usearch_size(inner.asCPointer(), err)
+        }
+
+    actual val capacity: ULong
+        get() = errorScoped {
+            usearch_capacity(inner.asCPointer(), err)
+        }
+
     actual val hardwareAcceleration: String?
         get() = errorScoped {
             usearch_hardware_acceleration(inner.asCPointer(), err)?.toKString()
@@ -72,14 +83,18 @@ actual class Index {
     actual fun add(key: ULong, f32Vector: FloatArray) {
         val vector = f32Vector.toCValues()
         errorScoped {
-            usearch_add(inner.asCPointer(), key, vector, usearch_scalar_f32_k, err)
+            f32Vector.usePinned {
+                usearch_add(inner.asCPointer(), key, it.addressOf(0), usearch_scalar_f32_k, err)
+            }
         }
     }
 
     actual fun add(key: ULong, f64Vector: DoubleArray) {
         val vector = f64Vector.toCValues()
         errorScoped {
-            usearch_add(inner.asCPointer(), key, vector, usearch_scalar_f64_k, err)
+            f64Vector.usePinned {
+                usearch_add(inner.asCPointer(), key, it.addressOf(0), usearch_scalar_f64_k, err)
+            }
         }
     }
 
@@ -99,18 +114,56 @@ actual class Index {
             )
             Matches(
                 keys = object : DelegatedList<usearch_key_t>(count.toInt()) {
-                    override fun get(index: Int): usearch_key_t = keys[index]
+                    override fun get(index: Int): usearch_key_t {
+                        if (index >= count.toInt()) {
+                            throw IndexOutOfBoundsException("index $index is out of bounds")
+                        }
+                        return keys[index]
+                    }
                     val cleaner = createCleaner(keys) {
                         nativeHeap.free(it)
                     }
                 },
                 distances = object : DelegatedList<Float>(count.toInt()) {
-                    override fun get(index: Int): Float = distances[index]
+                    override fun get(index: Int): Float {
+                        if (index >= count.toInt()) {
+                            throw IndexOutOfBoundsException("index $index is out of bounds")
+                        }
+                        return distances[index]
+                    }
                     val cleaner = createCleaner(distances) {
                         nativeHeap.free(it)
                     }
                 },
             )
+        }
+    }
+
+    actual fun loadFile(filePath: String) {
+        errorScoped {
+            usearch_load(inner.asCPointer(), filePath, err)
+        }
+    }
+
+    actual fun loadBuffer(buffer: ByteArray) {
+        errorScoped {
+            buffer.usePinned {
+                usearch_load_buffer(inner.asCPointer(), it.addressOf(0), buffer.size.toULong(), err)
+            }
+        }
+    }
+
+    actual fun saveFile(filePath: String) {
+        errorScoped {
+            usearch_save(inner.asCPointer(), filePath, err)
+        }
+    }
+
+    actual fun saveBuffer(buffer: ByteArray) {
+        errorScoped {
+            buffer.usePinned {
+                usearch_save_buffer(inner.asCPointer(), it.addressOf(0), buffer.size.toULong(), err)
+            }
         }
     }
 
