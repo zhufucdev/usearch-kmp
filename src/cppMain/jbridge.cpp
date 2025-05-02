@@ -15,6 +15,37 @@ struct value_proxy {
     T inner;
 };
 
+template<typename T, typename ArrayConstructor, typename Region>
+jobjectArray jarray_usearch_get(const char *type_name, ArrayConstructor new_array, Region set_array_region, JNIEnv *env,
+                                const jlong ptr,
+                                const jlong key, const jlong count,
+                                const usearch_scalar_kind_t vector_kind) {
+    const auto p = reinterpret_cast<usearch_index_t *>(ptr);
+    usearch_error_t err = nullptr;
+    const auto dim = usearch_dimensions(p, &err);
+    if (err) {
+        throw_usearch_exception(env, err);
+        return nullptr;
+    }
+
+    const auto buf = new T[count * dim];
+    const auto actual_count = usearch_get(p, key, count, buf, vector_kind, &err);
+    if (err) {
+        throw_usearch_exception(env, err);
+        return nullptr;
+    }
+
+    const auto array = env->NewObjectArray(static_cast<jsize>(actual_count), env->FindClass(type_name), nullptr);
+    for (auto i = 0; i < actual_count; ++i) {
+        const auto vec = new_array(env, static_cast<jsize>(dim));
+        set_array_region(env, vec, 0, static_cast<jsize>(dim), buf + i * dim);
+        env->SetObjectArrayElement(array, i, vec);
+    }
+
+    delete[] buf;
+    return array;
+}
+
 extern "C" {
 JNIEXPORT jlong JNICALL Java_usearch_NativeBridge_usearch_1new_1index_1opts(
     JNIEnv *, jobject, jlong dimensions, jint metric_k, jint quantization_k, jlong connectivity, jlong expansion_add,
@@ -115,33 +146,138 @@ JNIEXPORT jstring JNICALL Java_usearch_NativeBridge_usearch_1hardware_1accelerat
     return env->NewStringUTF(r);
 }
 
+JNIEXPORT jlong JNICALL Java_usearch_NativeBridge_usearch_1dimensions
+(JNIEnv *env, jobject, jlong ptr) {
+    const auto p = reinterpret_cast<usearch_index_t *>(ptr);
+    usearch_error_t err = nullptr;
+    const auto r = usearch_dimensions(p, &err);
+    if (err) {
+        throw_usearch_exception(env, err);
+        return -1;
+    }
+    return static_cast<jlong>(r);
+}
+
+JNIEXPORT void JNICALL Java_usearch_NativeBridge_usearch_1remove
+(JNIEnv *env, jobject, jlong ptr, jlong key) {
+    const auto p = reinterpret_cast<usearch_index_t *>(ptr);
+    usearch_error_t err = nullptr;
+    usearch_remove(p, key, &err);
+    if (err) {
+        throw_usearch_exception(env, err);
+    }
+}
+
 JNIEXPORT void JNICALL Java_usearch_NativeBridge_usearch_1add_1f32
 (JNIEnv *env, jobject, jlong ptr, jlong key, jfloatArray vec) {
     const auto p = reinterpret_cast<unum::usearch::index_dense_t *>(ptr);
-    const auto vec_len = env->GetArrayLength(vec);
-    auto *buf = new jfloat[vec_len];
-    env->GetFloatArrayRegion(vec, 0, vec_len, buf);
-
-    auto result = p->add(key, buf);
-    delete[] buf;
+    const auto arr = env->GetFloatArrayElements(vec, nullptr);
+    auto result = p->add(key, arr);
+    env->ReleaseFloatArrayElements(vec, arr, JNI_OK);
     if (!result) {
         throw_usearch_exception(env, result.error.release());
     }
 }
 
-JNIEXPORT void JNICALL Java_usearch_NativeBridge_usearch_1add_1f64
-(JNIEnv *env, jobject, jlong ptr, jlong key, jdoubleArray vec) {
-    const auto p = reinterpret_cast<usearch_index_t *>(ptr);
-    const auto vec_len = env->GetArrayLength(vec);
-    auto *buf = new jdouble[vec_len];
-    env->GetDoubleArrayRegion(vec, 0, vec_len, buf);
+JNIEXPORT jobjectArray JNICALL Java_usearch_NativeBridge_usearch_1get_1f32
+(JNIEnv *env, jobject, jlong ptr, jlong key, jlong count) {
+    return jarray_usearch_get<jfloat>(
+        "[F", [](JNIEnv *env, jsize dim) { return env->NewFloatArray(dim); },
+        [](JNIEnv *env, jfloatArray arr, jsize start, jsize length, jfloat *source) {
+            env->SetFloatArrayRegion(arr, start, length, source);
+        },
+        env, ptr, key, count, usearch_scalar_f32_k);
+}
 
+void JNICALL Java_usearch_NativeBridge_usearch_1add_1f64
+(JNIEnv *env, jobject, jlong ptr, jlong key, jdoubleArray vec) {
+    const auto p = reinterpret_cast<unum::usearch::index_dense_t *>(ptr);
+    const auto arr = env->GetDoubleArrayElements(vec, nullptr);
+    auto result = p->add(key, arr);
+    env->ReleaseDoubleArrayElements(vec, arr, JNI_OK);
+    if (!result) {
+        throw_usearch_exception(env, result.error.release());
+    }
+}
+
+JNIEXPORT jobjectArray JNICALL Java_usearch_NativeBridge_usearch_1get_1f64
+(JNIEnv *env, jobject, jlong ptr, jlong key, jlong count) {
+    return jarray_usearch_get<jdouble>(
+        "[D", [](JNIEnv *env, jsize dim) { return env->NewDoubleArray(dim); },
+        [](JNIEnv *env, jdoubleArray arr, jsize start, jsize length, jdouble *source) {
+            env->SetDoubleArrayRegion(arr, start, length, source);
+        },
+        env, ptr, key, count, usearch_scalar_f64_k
+    );
+}
+
+JNIEXPORT void JNICALL Java_usearch_NativeBridge_usearch_1add_1f16
+(JNIEnv *env, jobject, jlong ptr, jlong key, jshortArray vec) {
+    const auto p = reinterpret_cast<usearch_index_t *>(ptr);
+    const auto arr = env->GetShortArrayElements(vec, nullptr);
     usearch_error_t err = nullptr;
-    usearch_add(p, key, buf, usearch_scalar_f64_k, &err);
-    delete[] buf;
+    usearch_add(p, key, arr, usearch_scalar_f16_k, &err);
+    env->ReleaseShortArrayElements(vec, arr, JNI_OK);
     if (err) {
         throw_usearch_exception(env, err);
     }
+}
+
+JNIEXPORT jobjectArray JNICALL Java_usearch_NativeBridge_usearch_1get_1f16
+(JNIEnv *env, jobject, jlong ptr, jlong key, jlong count) {
+    return jarray_usearch_get<jshort>(
+        "[S", [](JNIEnv *env, jsize dim) { return env->NewShortArray(dim); },
+        [](JNIEnv *env, jshortArray arr, jsize start, jsize length, jshort *source) {
+            env->SetShortArrayRegion(arr, start, length, source);
+        },
+        env, ptr, key, count, usearch_scalar_f16_k
+    );
+}
+
+JNIEXPORT void JNICALL Java_usearch_NativeBridge_usearch_1add_1i8
+(JNIEnv *env, jobject, jlong ptr, jlong key, jbyteArray vec) {
+    const auto p = reinterpret_cast<usearch_index_t *>(ptr);
+    const auto arr = env->GetByteArrayElements(vec, nullptr);
+    usearch_error_t err = nullptr;
+    usearch_add(p, key, arr, usearch_scalar_i8_k, &err);
+    env->ReleaseByteArrayElements(vec, arr, JNI_OK);
+    if (err) {
+        throw_usearch_exception(env, err);
+    }
+}
+
+JNIEXPORT jobjectArray JNICALL Java_usearch_NativeBridge_usearch_1get_1i8
+(JNIEnv *env, jobject, jlong ptr, jlong key, jlong count) {
+    return jarray_usearch_get<jbyte>(
+        "[B", [](JNIEnv *env, jsize dim) { return env->NewByteArray(dim); },
+        [](JNIEnv *env, jbyteArray arr, jsize start, jsize length, jbyte *source) {
+            env->SetByteArrayRegion(arr, start, length, source);
+        },
+        env, ptr, key, count, usearch_scalar_f16_k
+    );
+}
+
+JNIEXPORT void JNICALL Java_usearch_NativeBridge_usearch_1add_1b1
+(JNIEnv *env, jobject, jlong ptr, jlong key, jbyteArray vec) {
+    const auto p = reinterpret_cast<usearch_index_t *>(ptr);
+    const auto arr = env->GetByteArrayElements(vec, nullptr);
+    usearch_error_t err = nullptr;
+    usearch_add(p, key, arr, usearch_scalar_b1_k, &err);
+    env->ReleaseByteArrayElements(vec, arr, JNI_OK);
+    if (err) {
+        throw_usearch_exception(env, err);
+    }
+}
+
+JNIEXPORT jobjectArray JNICALL Java_usearch_NativeBridge_usearch_1get_1b1
+(JNIEnv * env, jobject, jlong ptr, jlong key, jlong count) {
+    return jarray_usearch_get<jbyte>(
+        "[B", [](JNIEnv *env, jsize dim) { return env->NewByteArray(dim); },
+        [](JNIEnv *env, jbyteArray arr, jsize start, jsize length, jbyte *source) {
+            env->SetByteArrayRegion(arr, start, length, source);
+        },
+        env, ptr, key, count, usearch_scalar_b1_k
+    );
 }
 
 JNIEXPORT jlong JNICALL Java_usearch_NativeBridge_usearch_1search

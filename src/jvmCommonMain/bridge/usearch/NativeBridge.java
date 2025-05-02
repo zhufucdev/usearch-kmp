@@ -25,9 +25,29 @@ public class NativeBridge {
 
     public native String usearch_hardware_acceleration(long index_ptr);
 
+    public native long usearch_dimensions(long index_ptr);
+
+    public native void usearch_remove(long index_ptr, long key);
+
     public native void usearch_add_f32(long index_ptr, long key, float[] f32_vec);
 
+    public native float[][] usearch_get_f32(long index_ptr, long key, long count);
+
     public native void usearch_add_f64(long index_ptr, long key, double[] f64_vec);
+
+    public native double[][] usearch_get_f64(long index_ptr, long key, long count);
+
+    public native void usearch_add_f16(long index_ptr, long key, short[] f16_vec);
+
+    public native short[][] usearch_get_f16(long index_ptr, long key, long count);
+
+    public native void usearch_add_i8(long index_ptr, long key, byte[] i8_vec);
+
+    public native byte[][] usearch_get_i8(long index_ptr, long key, long count);
+
+    public native void usearch_add_b1(long index_ptr, long key, byte[] b1_vec);
+
+    public native byte[][] usearch_get_b1(long index_ptr, long key, long count);
 
     public native long usearch_search(long index_ptr, float[] query, int count);
 
