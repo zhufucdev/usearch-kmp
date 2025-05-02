@@ -110,19 +110,20 @@ actual class Index {
     actual val asB1x8: IndexQuery<ByteArray> by lazy(::B1Q)
 
     actual fun search(query: FloatArray, count: Int): Matches {
-        val queryArr = query.toCValues()
         val keys = nativeHeap.allocArray<usearch_key_tVar>(count)
         val distances = nativeHeap.allocArray<FloatVar>(count)
         return errorScoped {
-            val count = usearch_search(
-                inner.asCPointer(),
-                queryArr,
-                usearch_scalar_f32_k,
-                count.toULong(),
-                keys,
-                distances,
-                err
-            )
+            val count = query.usePinned {
+                usearch_search(
+                    inner.asCPointer(),
+                    it.addressOf(0),
+                    usearch_scalar_f32_k,
+                    count.toULong(),
+                    keys,
+                    distances,
+                    err
+                )
+            }
             Matches(
                 keys = object : DelegatedList<usearch_key_t>(count.toInt()) {
                     override fun get(index: Int): usearch_key_t {

@@ -3,7 +3,6 @@ import usearch.Index
 import usearch.IndexOptions
 import usearch.MetricKind
 import usearch.ScalarKind
-import usearch.USearchException
 import usearch.toFloat16
 import kotlin.math.E
 import kotlin.math.PI
