@@ -32,6 +32,11 @@ expect class Index(options: IndexOptions) {
     val capacity: ULong
 
     /**
+     * Reports the memory usage of the index in bytes.
+     */
+    val memoryUsage: ULong
+
+    /**
      * Reports the SIMD capabilities used by the index on the current CPU.
      */
     val hardwareAcceleration: String?

@@ -85,6 +85,11 @@ actual class Index {
             usearch_hardware_acceleration(inner.asCPointer(), err)?.toKString()
         }
 
+    actual val memoryUsage: ULong
+        get() = errorScoped {
+            usearch_memory_usage(inner.asCPointer(), err)
+        }
+
     actual fun add(key: ULong, f32Vector: FloatArray) {
         asF32.add(key, f32Vector)
     }

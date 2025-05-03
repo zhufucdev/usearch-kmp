@@ -146,6 +146,19 @@ JNIEXPORT jstring JNICALL Java_usearch_NativeBridge_usearch_1hardware_1accelerat
     return env->NewStringUTF(r);
 }
 
+
+JNIEXPORT jlong JNICALL Java_usearch_NativeBridge_usearch_1memory_1usage
+(JNIEnv *env, jobject, jlong ptr) {
+    const auto p = reinterpret_cast<usearch_index_t *>(ptr);
+    usearch_error_t err = nullptr;
+    const auto r = usearch_memory_usage(p, &err);
+    if (err) {
+        throw_usearch_exception(env, err);
+        return -1;
+    }
+    return r;
+}
+
 JNIEXPORT jlong JNICALL Java_usearch_NativeBridge_usearch_1dimensions
 (JNIEnv *env, jobject, jlong ptr) {
     const auto p = reinterpret_cast<usearch_index_t *>(ptr);

@@ -25,6 +25,8 @@ public class NativeBridge {
 
     public native String usearch_hardware_acceleration(long index_ptr);
 
+    public native long usearch_memory_usage(long index_ptr);
+
     public native long usearch_dimensions(long index_ptr);
 
     public native void usearch_remove(long index_ptr, long key);

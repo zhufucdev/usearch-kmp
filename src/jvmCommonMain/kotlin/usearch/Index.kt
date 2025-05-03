@@ -39,6 +39,7 @@ actual class Index(
         get() = _metricKind
         set(value) {
             _metricKind = value
+
         }
 
     actual val hardwareAcceleration: String?
@@ -147,6 +148,9 @@ actual class Index(
 
     actual val capacity: ULong
         get() = NativeMethods.bridge.usearch_capacity(ptr).toULong()
+
+    actual val memoryUsage: ULong
+        get() = NativeMethods.bridge.usearch_memory_usage(ptr).toULong()
 
     actual fun loadFile(filePath: String) {
         NativeMethods.bridge.usearch_load_file(ptr, filePath)
