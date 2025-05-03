@@ -133,6 +133,16 @@ JNIEXPORT void JNICALL Java_usearch_NativeBridge_usearch_1change_1expansion_1sea
     }
 }
 
+JNIEXPORT void JNICALL Java_usearch_NativeBridge_usearch_1change_1metric_1kind
+(JNIEnv *env, jobject, jlong ptr, jlong new_value) {
+    const auto p = reinterpret_cast<usearch_index_t *>(ptr);
+    const auto metric_k = static_cast<usearch_metric_kind_t>(new_value);
+    usearch_error_t err = nullptr;
+    usearch_change_metric_kind(p, metric_k, &err);
+    if (err) {
+        throw_usearch_exception(env, err);
+    }
+}
 
 JNIEXPORT jstring JNICALL Java_usearch_NativeBridge_usearch_1hardware_1acceleration
 (JNIEnv *env, jobject, jlong ptr) {

@@ -23,6 +23,8 @@ public class NativeBridge {
 
     public native void usearch_change_expansion_search(long index_ptr, long new_value);
 
+    public native void usearch_change_metric_kind(long index_ptr, long metric_k);
+
     public native String usearch_hardware_acceleration(long index_ptr);
 
     public native long usearch_memory_usage(long index_ptr);
