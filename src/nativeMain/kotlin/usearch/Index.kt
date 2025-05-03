@@ -95,16 +95,18 @@ actual class Index {
     }
 
     actual fun add(key: ULong, f64Vector: DoubleArray) {
-        errorScoped {
-            f64Vector.usePinned {
-                usearch_add(inner.asCPointer(), key, it.addressOf(0), usearch_scalar_f64_k, err)
-            }
-        }
+        asF64.add(key, f64Vector)
     }
 
     actual fun remove(key: ULong) {
         errorScoped {
             usearch_remove(inner.asCPointer(), key, err)
+        }
+    }
+
+    actual fun reserve(capacity: ULong) {
+        errorScoped {
+            usearch_reserve(inner.asCPointer(), capacity, err)
         }
     }
 
@@ -212,6 +214,9 @@ actual class Index {
             if (isEmpty(vec)) {
                 throw IllegalArgumentException("Cannot add empty vector.")
             }
+            if (capacity < size + 1u) {
+                reserve(INCREMENTAL_CAPACITY.toULong())
+            }
             errorScoped {
                 vec.usePinned {
                     usearch_add(inner.asCPointer(), key, it.addr(0), vectorKind.nativeEnum, err)
@@ -296,5 +301,6 @@ actual class Index {
 
     actual companion object {
         actual val INITIAL_CAPACITY: Long = 5L
+        actual val INCREMENTAL_CAPACITY: Long = 5L
     }
 }

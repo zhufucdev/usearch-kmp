@@ -1,7 +1,5 @@
 package usearch
 
-import kotlin.IllegalArgumentException
-
 actual class Index(
     private val ptr: Long,
     private var _metricKind: MetricKind
@@ -62,93 +60,19 @@ actual class Index(
         NativeMethods.bridge.usearch_remove(ptr, key.toLong())
     }
 
-    actual val asF32: IndexQuery<FloatArray> by lazy {
-        object : NullSafeIndexQuery<FloatArray>() {
-            override fun isEmpty(vec: FloatArray): Boolean = vec.isEmpty()
-
-            override fun addNotEmpty(key: ULong, vec: FloatArray) {
-                NativeMethods.bridge.usearch_add_f32(ptr, key.toLong(), vec)
-            }
-
-            override fun get(key: ULong): FloatArray? =
-                NativeMethods.bridge.usearch_get_f32(ptr, key.toLong(), 1).firstOrNull()
-
-            override fun get(key: ULong, count: ULong): List<FloatArray> =
-                NativeMethods.bridge.usearch_get_f32(ptr, key.toLong(), count.toLong())
-                    .toList()
-        }
+    actual fun reserve(capacity: ULong) {
+        NativeMethods.bridge.usearch_reserve(ptr, capacity.toLong())
     }
 
-    actual val asF64: IndexQuery<DoubleArray> by lazy {
-        object : NullSafeIndexQuery<DoubleArray>() {
-            override fun isEmpty(vec: DoubleArray): Boolean = vec.isEmpty()
+    actual val asF32: IndexQuery<FloatArray> by lazy(::F32Q)
 
-            override fun addNotEmpty(key: ULong, vec: DoubleArray) {
-                NativeMethods.bridge.usearch_add_f64(ptr, key.toLong(), vec)
-            }
+    actual val asF64: IndexQuery<DoubleArray> by lazy(::F64Q)
 
-            override fun get(key: ULong): DoubleArray? =
-                NativeMethods.bridge.usearch_get_f64(ptr, key.toLong(), 1).firstOrNull()
+    actual val asF16: IndexQuery<Float16Array> by lazy(::F16Q)
 
-            override fun get(key: ULong, count: ULong): List<DoubleArray> =
-                NativeMethods.bridge.usearch_get_f64(ptr, key.toLong(), count.toLong())
-                    .toList()
-        }
-    }
+    actual val asI8: IndexQuery<ByteArray> by lazy(::I8Q)
 
-    actual val asF16: IndexQuery<Float16Array> by lazy {
-        object : NullSafeIndexQuery<Float16Array>() {
-            override fun isEmpty(vec: Float16Array): Boolean = vec.isEmpty()
-
-            override fun addNotEmpty(key: ULong, vec: Float16Array) {
-                NativeMethods.bridge.usearch_add_f16(ptr, key.toLong(), vec.toRawBits())
-            }
-
-            override fun get(key: ULong): Float16Array? =
-                NativeMethods.bridge.usearch_get_f16(ptr, key.toLong(), 1)
-                    .firstOrNull()
-                    ?.let(::Float16Array)
-
-            override fun get(key: ULong, count: ULong): List<Float16Array> =
-                NativeMethods.bridge.usearch_get_f16(ptr, key.toLong(), count.toLong())
-                    .map(::Float16Array)
-        }
-    }
-
-    actual val asI8: IndexQuery<ByteArray> by lazy {
-        object : NullSafeIndexQuery<ByteArray>() {
-            override fun isEmpty(vec: ByteArray): Boolean = vec.isEmpty()
-
-            override fun addNotEmpty(key: ULong, vec: ByteArray) {
-                NativeMethods.bridge.usearch_add_i8(ptr, key.toLong(), vec)
-            }
-
-            override fun get(key: ULong): ByteArray? =
-                NativeMethods.bridge.usearch_get_i8(ptr, key.toLong(), 1).firstOrNull()
-
-            override fun get(key: ULong, count: ULong): List<ByteArray> =
-                NativeMethods.bridge.usearch_get_i8(ptr, key.toLong(), count.toLong())
-                    .toList()
-        }
-    }
-
-    actual val asB1x8: IndexQuery<ByteArray> by lazy {
-        object : NullSafeIndexQuery<ByteArray>() {
-            override fun isEmpty(vec: ByteArray): Boolean = vec.isEmpty()
-
-            override fun addNotEmpty(key: ULong, vec: ByteArray) {
-                NativeMethods.bridge.usearch_add_b1(ptr, key.toLong(), vec)
-            }
-
-            override fun get(key: ULong): ByteArray? =
-                NativeMethods.bridge.usearch_get_b1(ptr, key.toLong(), 1)
-                    .firstOrNull()
-
-            override fun get(key: ULong, count: ULong): List<ByteArray> =
-                NativeMethods.bridge.usearch_get_b1(ptr, key.toLong(), count.toLong())
-                    .toList()
-        }
-    }
+    actual val asB1x8: IndexQuery<ByteArray> by lazy(::B1Q)
 
     actual fun search(query: FloatArray, count: Int): Matches {
         val p = NativeMethods.bridge.usearch_search(ptr, query, count)
@@ -193,17 +117,99 @@ actual class Index(
 
     actual companion object {
         actual val INITIAL_CAPACITY: Long = 5L
+        actual val INCREMENTAL_CAPACITY: Long = 5L
     }
-}
 
-private abstract class NullSafeIndexQuery<T> : IndexQuery<T> {
-    final override fun add(key: ULong, vec: T) {
-        if (isEmpty(vec)) {
-            throw IllegalArgumentException("Cannot add empty vector.")
+    inner class F32Q : CommonIndexQuery<FloatArray>() {
+        override fun isEmpty(vec: FloatArray): Boolean = vec.isEmpty()
+
+        override fun addNotEmpty(key: ULong, vec: FloatArray) {
+            NativeMethods.bridge.usearch_add_f32(ptr, key.toLong(), vec)
         }
-        addNotEmpty(key, vec)
+
+        override fun get(key: ULong): FloatArray? =
+            NativeMethods.bridge.usearch_get_f32(ptr, key.toLong(), 1).firstOrNull()
+
+        override fun get(key: ULong, count: ULong): List<FloatArray> =
+            NativeMethods.bridge.usearch_get_f32(ptr, key.toLong(), count.toLong())
+                .toList()
     }
 
-    abstract fun isEmpty(vec: T): Boolean
-    abstract fun addNotEmpty(key: ULong, vec: T)
+    inner class F64Q : CommonIndexQuery<DoubleArray>() {
+        override fun isEmpty(vec: DoubleArray): Boolean = vec.isEmpty()
+
+        override fun addNotEmpty(key: ULong, vec: DoubleArray) {
+            NativeMethods.bridge.usearch_add_f64(ptr, key.toLong(), vec)
+        }
+
+        override fun get(key: ULong): DoubleArray? =
+            NativeMethods.bridge.usearch_get_f64(ptr, key.toLong(), 1).firstOrNull()
+
+        override fun get(key: ULong, count: ULong): List<DoubleArray> =
+            NativeMethods.bridge.usearch_get_f64(ptr, key.toLong(), count.toLong())
+                .toList()
+    }
+
+    inner class F16Q : CommonIndexQuery<Float16Array>() {
+        override fun isEmpty(vec: Float16Array): Boolean = vec.isEmpty()
+
+        override fun addNotEmpty(key: ULong, vec: Float16Array) {
+            NativeMethods.bridge.usearch_add_f16(ptr, key.toLong(), vec.toRawBits())
+        }
+
+        override fun get(key: ULong): Float16Array? =
+            NativeMethods.bridge.usearch_get_f16(ptr, key.toLong(), 1)
+                .firstOrNull()
+                ?.let(::Float16Array)
+
+        override fun get(key: ULong, count: ULong): List<Float16Array> =
+            NativeMethods.bridge.usearch_get_f16(ptr, key.toLong(), count.toLong())
+                .map(::Float16Array)
+    }
+
+    inner class I8Q : CommonIndexQuery<ByteArray>() {
+        override fun isEmpty(vec: ByteArray): Boolean = vec.isEmpty()
+
+        override fun addNotEmpty(key: ULong, vec: ByteArray) {
+            NativeMethods.bridge.usearch_add_i8(ptr, key.toLong(), vec)
+        }
+
+        override fun get(key: ULong): ByteArray? =
+            NativeMethods.bridge.usearch_get_i8(ptr, key.toLong(), 1).firstOrNull()
+
+        override fun get(key: ULong, count: ULong): List<ByteArray> =
+            NativeMethods.bridge.usearch_get_i8(ptr, key.toLong(), count.toLong())
+                .toList()
+    }
+
+    inner class B1Q : CommonIndexQuery<ByteArray>() {
+        override fun isEmpty(vec: ByteArray): Boolean = vec.isEmpty()
+
+        override fun addNotEmpty(key: ULong, vec: ByteArray) {
+            NativeMethods.bridge.usearch_add_b1(ptr, key.toLong(), vec)
+        }
+
+        override fun get(key: ULong): ByteArray? =
+            NativeMethods.bridge.usearch_get_b1(ptr, key.toLong(), 1)
+                .firstOrNull()
+
+        override fun get(key: ULong, count: ULong): List<ByteArray> =
+            NativeMethods.bridge.usearch_get_b1(ptr, key.toLong(), count.toLong())
+                .toList()
+    }
+
+    abstract inner class CommonIndexQuery<T> : IndexQuery<T> {
+        final override fun add(key: ULong, vec: T) {
+            if (isEmpty(vec)) {
+                throw IllegalArgumentException("Cannot add empty vector.")
+            }
+            if (capacity < size + 1u) {
+                NativeMethods.bridge.usearch_reserve(ptr, INCREMENTAL_CAPACITY)
+            }
+            addNotEmpty(key, vec)
+        }
+
+        abstract fun isEmpty(vec: T): Boolean
+        abstract fun addNotEmpty(key: ULong, vec: T)
+    }
 }

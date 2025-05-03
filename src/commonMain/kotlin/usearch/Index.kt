@@ -54,6 +54,11 @@ expect class Index(options: IndexOptions) {
     fun remove(key: ULong)
 
     /**
+     * Reserves memory for a specified number of incoming vectors.
+     */
+    fun reserve(capacity: ULong)
+
+    /**
      * CRUD in single precision floating point mode.
      */
     val asF32: IndexQuery<FloatArray>
@@ -114,5 +119,11 @@ expect class Index(options: IndexOptions) {
          * Default memory reservation amount of the index.
          */
         val INITIAL_CAPACITY: Long
+
+        /**
+         * Default memory allocation when incoming insertion fails with
+         * inadequate capacity.
+         */
+        val INCREMENTAL_CAPACITY: Long
     }
 }
