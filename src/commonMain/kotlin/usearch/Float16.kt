@@ -27,9 +27,12 @@ value class Float16(internal val rawBits: Short) {
 
         // Special FP16 bit patterns
         internal const val POSITIVE_INFINITY_BITS: Short = ((MAX_EXPONENT_VALUE shl EXPONENT_SHIFT)).toShort() // 0x7C00
-        internal const val NEGATIVE_INFINITY_BITS: Short = (SIGN_MASK_INT or (MAX_EXPONENT_VALUE shl EXPONENT_SHIFT)).toShort() // 0xFC00
+        internal const val NEGATIVE_INFINITY_BITS: Short =
+            (SIGN_MASK_INT or (MAX_EXPONENT_VALUE shl EXPONENT_SHIFT)).toShort() // 0xFC00
+
         // A common quiet NaN pattern (exponent all 1s, MSB of mantissa is 1)
-        internal const val NaN_BITS: Short = ((MAX_EXPONENT_VALUE shl EXPONENT_SHIFT) or (1 shl (MANTISSA_BITS - 1))).toShort() // 0x7E00
+        internal const val NaN_BITS: Short =
+            ((MAX_EXPONENT_VALUE shl EXPONENT_SHIFT) or (1 shl (MANTISSA_BITS - 1))).toShort() // 0x7E00
         // Another possible NaN (more specific than just non-zero mantissa)
         // const val NaN_BITS: Short = ((MAX_EXPONENT_VALUE shl EXPONENT_SHIFT) or 1).toShort() // 0x7C01
 
@@ -39,12 +42,18 @@ value class Float16(internal val rawBits: Short) {
         val NaN = Float16(NaN_BITS)
         val POSITIVE_ZERO = Float16(0)
         val NEGATIVE_ZERO = Float16(SIGN_MASK_SHORT)
+
         // Max normal value: sign=0, exp=30 (biased 11110), mantissa=all 1s
-        val MAX_VALUE = Float16(((MAX_NORMAL_EXPONENT_VALUE shl EXPONENT_SHIFT) or MANTISSA_MASK).toShort()) // 65504, 0x7BFF
+        val MAX_VALUE =
+            Float16(((MAX_NORMAL_EXPONENT_VALUE shl EXPONENT_SHIFT) or MANTISSA_MASK).toShort()) // 65504, 0x7BFF
+
         // Min normal value: sign=0, exp=1 (biased 00001), mantissa=all 0s
-        val MIN_NORMAL_VALUE = Float16((MIN_NORMAL_EXPONENT_VALUE shl EXPONENT_SHIFT).toShort()) // 2^-14 ≈ 6.1035e-5, 0x0400
+        val MIN_NORMAL_VALUE =
+            Float16((MIN_NORMAL_EXPONENT_VALUE shl EXPONENT_SHIFT).toShort()) // 2^-14 ≈ 6.1035e-5, 0x0400
+
         // Smallest positive subnormal value: sign=0, exp=0, mantissa=1
         val MIN_VALUE = Float16(1) // 2^-24 ≈ 5.9604e-8, 0x0001
+
         // Largest subnormal value: sign=0, exp=0, mantissa=all 1s
         val MAX_SUBNORMAL_VALUE = Float16(MANTISSA_MASK.toShort()) // ≈ 6.1004e-5, 0x03FF
 
@@ -109,6 +118,7 @@ fun Float16.toFloat(): Float {
                 mantissa16 shl (Float16.FLOAT_MANTISSA_BITS - Float16.MANTISSA_BITS)
             }
         }
+
         0 -> { // Zero or Subnormal FP16
             if (mantissa16 == 0) {
                 // Zero
@@ -129,8 +139,10 @@ fun Float16.toFloat(): Float {
                 }
 
                 // Calculate the normalization shift and the new exponent
-                val shift = Float16.MANTISSA_BITS - 1 - leadingOnePos // How many positions the leading 1 is from the MSB
-                val effectiveExponent = Float16.MIN_NORMAL_EXPONENT_VALUE - Float16.BIAS - shift // Exponent = 1 - 15 - shift = -14 - shift
+                val shift =
+                    Float16.MANTISSA_BITS - 1 - leadingOnePos // How many positions the leading 1 is from the MSB
+                val effectiveExponent =
+                    Float16.MIN_NORMAL_EXPONENT_VALUE - Float16.BIAS - shift // Exponent = 1 - 15 - shift = -14 - shift
 
                 // Alternative subnormal calculation:
                 // Keep shifting mantissa left until the implicit 1 is found (or mantissa becomes 0)
@@ -149,10 +161,12 @@ fun Float16.toFloat(): Float {
                 } else {
                     exponent32 = currentExponent + Float16.FLOAT_BIAS // Re-bias for Float
                     // Remove implicit 1, scale mantissa
-                    mantissa32 = (currentMantissa and Float16.MANTISSA_MASK) shl (Float16.FLOAT_MANTISSA_BITS - Float16.MANTISSA_BITS)
+                    mantissa32 =
+                        (currentMantissa and Float16.MANTISSA_MASK) shl (Float16.FLOAT_MANTISSA_BITS - Float16.MANTISSA_BITS)
                 }
             }
         }
+
         else -> { // Normalized FP16
             // Value = (-1)^sign * 2^(exponent16 - bias16) * (1.mantissa16)_2
             val unbiasedExponent = exponent16 - Float16.BIAS
@@ -194,6 +208,7 @@ fun Float16.toDouble(): Double {
                 mantissa16.toLong() shl (Float16.DOUBLE_MANTISSA_BITS - Float16.MANTISSA_BITS)
             }
         }
+
         0 -> { // Zero or Subnormal FP16
             if (mantissa16 == 0) {
                 // Zero
@@ -213,10 +228,12 @@ fun Float16.toDouble(): Double {
 
                 exponent64 = (currentExponent + Float16.DOUBLE_BIAS).toLong() // Re-bias for Double
                 // Remove implicit 1, scale mantissa to 52 bits
-                mantissa64 = (currentMantissa and Float16.MANTISSA_MASK).toLong() shl (Float16.DOUBLE_MANTISSA_BITS - Float16.MANTISSA_BITS)
+                mantissa64 =
+                    (currentMantissa and Float16.MANTISSA_MASK).toLong() shl (Float16.DOUBLE_MANTISSA_BITS - Float16.MANTISSA_BITS)
 
             }
         }
+
         else -> { // Normalized FP16
             // Value = (-1)^sign * 2^(exponent16 - bias16) * (1.mantissa16)_2
             val unbiasedExponent = exponent16 - Float16.BIAS
@@ -257,14 +274,16 @@ fun Float.toFloat16(): Float16 {
             } else {
                 // Propagate NaN payload, taking the top 10 bits of the Float mantissa
                 // Set MSB of FP16 mantissa to ensure it's NaN if Float mantissa was non-zero
-                (mantissa32 ushr (Float16.FLOAT_MANTISSA_BITS - Float16.MANTISSA_BITS)) or (1 shl (Float16.MANTISSA_BITS -1)) // Ensure NaN
+                (mantissa32 ushr (Float16.FLOAT_MANTISSA_BITS - Float16.MANTISSA_BITS)) or (1 shl (Float16.MANTISSA_BITS - 1)) // Ensure NaN
             }
         }
+
         0 -> { // Float Zero or Subnormal
             // Float subnormals are smaller than the smallest FP16 subnormal, they become FP16 zero
             exponent16 = 0
             mantissa16 = 0
         }
+
         else -> { // Normalized Float
             val unbiasedExponent = exponent32 - Float16.FLOAT_BIAS
 
@@ -273,11 +292,13 @@ fun Float.toFloat16(): Float16 {
                     exponent16 = Float16.MAX_EXPONENT_VALUE
                     mantissa16 = 0
                 }
+
                 unbiasedExponent < (Float16.MIN_NORMAL_EXPONENT_VALUE - Float16.BIAS) -> { // Underflow to FP16 Subnormal or Zero
                     // Value is too small to be a normal FP16 number. Check if it can be subnormal.
                     // Smallest normal FP16 exponent = 1 - 15 = -14
                     // Calculate the required shift to represent as subnormal
-                    val shift = Float16.FLOAT_MANTISSA_BITS - (unbiasedExponent - (Float16.MIN_NORMAL_EXPONENT_VALUE - Float16.BIAS - Float16.MANTISSA_BITS))
+                    val shift =
+                        Float16.FLOAT_MANTISSA_BITS - (unbiasedExponent - (Float16.MIN_NORMAL_EXPONENT_VALUE - Float16.BIAS - Float16.MANTISSA_BITS))
                     // shift = 23 - (exp - (-14 - 10)) = 23 - (exp + 24) = -1 - exp
 
                     // Add implicit 1 back to mantissa for subnormal calculation
@@ -289,7 +310,8 @@ fun Float.toFloat16(): Float16 {
                         mantissa16 = 0
                     } else {
                         // Attempt to represent as subnormal, requires right shifting
-                        val subnormalShift = (Float16.MIN_NORMAL_EXPONENT_VALUE - Float16.BIAS) - unbiasedExponent // 1-15 - exp = -14 - exp
+                        val subnormalShift =
+                            (Float16.MIN_NORMAL_EXPONENT_VALUE - Float16.BIAS) - unbiasedExponent // 1-15 - exp = -14 - exp
                         if (subnormalShift > Float16.FLOAT_MANTISSA_BITS) { // Shifting out all bits?
                             exponent16 = 0
                             mantissa16 = 0
@@ -317,6 +339,7 @@ fun Float.toFloat16(): Float16 {
                         }
                     }
                 }
+
                 else -> { // Normal FP16 range
                     exponent16 = unbiasedExponent + Float16.BIAS // Re-bias for FP16
                     // Need to reduce mantissa from 23 bits to 10 bits, applying rounding
@@ -378,14 +401,16 @@ fun Double.toFloat16(): Float16 {
                 0 // Infinity
             } else {
                 // Propagate NaN, taking top 10 bits of Double mantissa
-                (mantissa64 ushr (Float16.DOUBLE_MANTISSA_BITS - Float16.MANTISSA_BITS)).toInt() or (1 shl (Float16.MANTISSA_BITS -1)) // Ensure NaN
+                (mantissa64 ushr (Float16.DOUBLE_MANTISSA_BITS - Float16.MANTISSA_BITS)).toInt() or (1 shl (Float16.MANTISSA_BITS - 1)) // Ensure NaN
             }
         }
+
         0 -> { // Double Zero or Subnormal
             // Double subnormals are much smaller than FP16 subnormals, map to FP16 zero
             exponent16 = 0
             mantissa16 = 0
         }
+
         else -> { // Normalized Double
             val unbiasedExponent = exponent64 - Float16.DOUBLE_BIAS
 
@@ -394,24 +419,28 @@ fun Double.toFloat16(): Float16 {
                     exponent16 = Float16.MAX_EXPONENT_VALUE
                     mantissa16 = 0
                 }
+
                 unbiasedExponent < (Float16.MIN_NORMAL_EXPONENT_VALUE - Float16.BIAS - Float16.MANTISSA_BITS) -> { // Underflow to FP16 Zero
                     // Check if exponent < -24 (conservative check for underflow)
                     exponent16 = 0
                     mantissa16 = 0
                 }
+
                 unbiasedExponent <= (Float16.MIN_NORMAL_EXPONENT_VALUE - Float16.BIAS) -> { // Underflow to FP16 Subnormal or Zero
                     // Value might be representable as FP16 subnormal
                     // Add implicit 1 back to mantissa
                     val implicitMantissa64 = mantissa64 or (1L shl Float16.DOUBLE_MANTISSA_BITS)
                     // Calculate shift needed to align for subnormal representation
-                    val subnormalShift = (Float16.MIN_NORMAL_EXPONENT_VALUE - Float16.BIAS) - unbiasedExponent // -14 - exp
+                    val subnormalShift =
+                        (Float16.MIN_NORMAL_EXPONENT_VALUE - Float16.BIAS) - unbiasedExponent // -14 - exp
 
                     if (subnormalShift > Float16.DOUBLE_MANTISSA_BITS + 1) { // Shifting out all bits? (+1 for implicit bit)
                         exponent16 = 0
                         mantissa16 = 0
                     } else {
                         // Perform rounding during the shift right
-                        val effectiveShift = subnormalShift + (Float16.DOUBLE_MANTISSA_BITS - Float16.MANTISSA_BITS) // Total shift from original mantissa
+                        val effectiveShift =
+                            subnormalShift + (Float16.DOUBLE_MANTISSA_BITS - Float16.MANTISSA_BITS) // Total shift from original mantissa
                         // effectiveShift = -14 - exp + 42 = 28 - exp
 
                         val roundBitIndex = effectiveShift - 1
@@ -434,6 +463,7 @@ fun Double.toFloat16(): Float16 {
                         }
                     }
                 }
+
                 else -> { // Normal FP16 range
                     exponent16 = unbiasedExponent + Float16.BIAS // Re-bias for FP16
                     // Reduce mantissa from 52 bits to 10 bits, applying rounding
@@ -509,8 +539,19 @@ class Float16Array : Iterable<Float16> {
         override fun hasNext(): Boolean = current >= size
     }
 
-    override fun iterator(): Float16Iterator = Float16IteratorImpl()
+    override operator fun iterator(): Float16Iterator = Float16IteratorImpl()
 }
+
+/**
+ * Returns `true` if the array is empty.
+ */
+fun Float16Array.isEmpty() = size <= 0
+
+/**
+ * Returns `true` if the array is not empty.
+ */
+fun Float16Array.isNotEmpty() = size > 0
+
 
 /**
  * Get the underlying presentation, whose mutation will be reflected

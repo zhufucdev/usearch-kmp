@@ -165,9 +165,17 @@ actual class Index {
     }
 
     actual fun loadBuffer(buffer: ByteArray) {
+        if (buffer.isEmpty()) {
+            throw IllegalArgumentException("Cannot load empty buffer.")
+        }
         errorScoped {
             buffer.usePinned {
-                usearch_load_buffer(inner.asCPointer(), it.addressOf(0), buffer.size.toULong(), err)
+                usearch_load_buffer(
+                    index = inner.asCPointer(),
+                    buffer = it.addressOf(0),
+                    length = buffer.size.toULong(),
+                    error = err
+                )
             }
         }
     }
@@ -179,19 +187,31 @@ actual class Index {
     }
 
     actual fun saveBuffer(buffer: ByteArray) {
+        if (buffer.isEmpty()) {
+            throw IllegalArgumentException("Cannot save to empty buffer.")
+        }
         errorScoped {
             buffer.usePinned {
-                usearch_save_buffer(inner.asCPointer(), it.addressOf(0), buffer.size.toULong(), err)
+                usearch_save_buffer(
+                    index = inner.asCPointer(),
+                    buffer = it.addressOf(0),
+                    length = buffer.size.toULong(),
+                    error = err
+                )
             }
         }
     }
 
     abstract inner class CommonIndexQuery<T : Any>(val vectorKind: ScalarKind) : IndexQuery<T> {
-        abstract fun constructEmptyArray(count: Int): T
+        abstract fun constructDefaultArray(size: Int): T
         abstract fun Pinned<T>.addr(index: Int): CPointer<*>
         abstract fun T.slice(indices: IntRange): T
+        abstract fun isEmpty(vec: T): Boolean
 
         override fun add(key: ULong, vec: T) {
+            if (isEmpty(vec)) {
+                throw IllegalArgumentException("Cannot add empty vector.")
+            }
             errorScoped {
                 vec.usePinned {
                     usearch_add(inner.asCPointer(), key, it.addr(0), vectorKind.nativeEnum, err)
@@ -200,7 +220,7 @@ actual class Index {
         }
 
         override fun get(key: ULong): T? = errorScoped {
-            constructEmptyArray(dimensions.toInt()).apply {
+            constructDefaultArray(dimensions.toInt()).apply {
                 usePinned {
                     val actualCount = usearch_get(inner.asCPointer(), key, 1u, it.addr(0), vectorKind.nativeEnum, err)
                     if (actualCount < 1u) {
@@ -212,7 +232,7 @@ actual class Index {
 
         override fun get(key: ULong, count: ULong): List<T> = errorScoped {
             val dimensions = dimensions.toInt()
-            constructEmptyArray(dimensions * count.toInt()).apply {
+            constructDefaultArray(dimensions * count.toInt()).apply {
                 usePinned {
                     usearch_get(inner.asCPointer(), key, count, it.addr(0), usearch_scalar_f32_k, err)
                 }
@@ -225,7 +245,9 @@ actual class Index {
     }
 
     inner class F32Q : CommonIndexQuery<FloatArray>(ScalarKind.F32) {
-        override fun constructEmptyArray(count: Int): FloatArray = FloatArray(count)
+        override fun isEmpty(vec: FloatArray): Boolean = vec.isEmpty()
+
+        override fun constructDefaultArray(size: Int): FloatArray = FloatArray(size)
 
         override fun Pinned<FloatArray>.addr(index: Int): CPointer<*> = addressOf(index)
 
@@ -233,7 +255,9 @@ actual class Index {
     }
 
     inner class F64Q : CommonIndexQuery<DoubleArray>(ScalarKind.F64) {
-        override fun constructEmptyArray(count: Int): DoubleArray = DoubleArray(count)
+        override fun isEmpty(vec: DoubleArray): Boolean = vec.isEmpty()
+
+        override fun constructDefaultArray(size: Int): DoubleArray = DoubleArray(size)
 
         override fun Pinned<DoubleArray>.addr(index: Int): CPointer<*> = addressOf(index)
 
@@ -241,7 +265,9 @@ actual class Index {
     }
 
     inner class F16Q : CommonIndexQuery<Float16Array>(ScalarKind.F16) {
-        override fun constructEmptyArray(count: Int): Float16Array = Float16Array(count)
+        override fun isEmpty(vec: Float16Array): Boolean = vec.isEmpty()
+
+        override fun constructDefaultArray(size: Int): Float16Array = Float16Array(size)
 
         override fun Pinned<Float16Array>.addr(index: Int): CPointer<*> = get().inner.usePinned { it.addressOf(index) }
 
@@ -249,7 +275,9 @@ actual class Index {
     }
 
     inner class I8Q : CommonIndexQuery<ByteArray>(ScalarKind.I8) {
-        override fun constructEmptyArray(count: Int): ByteArray = ByteArray(count)
+        override fun isEmpty(vec: ByteArray): Boolean = vec.isEmpty()
+
+        override fun constructDefaultArray(size: Int): ByteArray = ByteArray(size)
 
         override fun Pinned<ByteArray>.addr(index: Int): CPointer<*> = addressOf(index)
 
@@ -257,7 +285,9 @@ actual class Index {
     }
 
     inner class B1Q : CommonIndexQuery<ByteArray>(ScalarKind.B1) {
-        override fun constructEmptyArray(count: Int): ByteArray = ByteArray(count)
+        override fun isEmpty(vec: ByteArray): Boolean = vec.isEmpty()
+
+        override fun constructDefaultArray(size: Int): ByteArray = ByteArray(size)
 
         override fun Pinned<ByteArray>.addr(index: Int): CPointer<*> = addressOf(index)
 

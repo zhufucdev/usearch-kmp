@@ -3,6 +3,7 @@ import usearch.Index
 import usearch.IndexOptions
 import usearch.MetricKind
 import usearch.ScalarKind
+import usearch.USearchException
 import usearch.toFloat16
 import kotlin.math.E
 import kotlin.math.PI
@@ -56,6 +57,15 @@ class IndexTest {
         val load = Index(exampleOpts)
         load.loadBuffer(buffer)
         assertEquals(index.size, load.size)
+    }
+
+    @Test
+    fun saveEmptyBuffer() {
+        val index = exampleIndex
+        val buffer = ByteArray(0)
+        assertFailsWith(IllegalArgumentException::class) {
+            index.saveBuffer(buffer)
+        }
     }
 
     @Test

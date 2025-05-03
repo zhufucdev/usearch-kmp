@@ -1,5 +1,7 @@
 package usearch
 
+import kotlin.IllegalArgumentException
+
 actual class Index(
     private val ptr: Long,
     private var _metricKind: MetricKind
@@ -49,11 +51,11 @@ actual class Index(
         get() = NativeMethods.bridge.usearch_dimensions(ptr).toULong()
 
     actual fun add(key: ULong, f32Vector: FloatArray) {
-        NativeMethods.bridge.usearch_add_f32(ptr, key.toLong(), f32Vector)
+        asF32.add(key, f32Vector)
     }
 
     actual fun add(key: ULong, f64Vector: DoubleArray) {
-        NativeMethods.bridge.usearch_add_f64(ptr, key.toLong(), f64Vector)
+        asF64.add(key, f64Vector)
     }
 
     actual fun remove(key: ULong) {
@@ -61,8 +63,10 @@ actual class Index(
     }
 
     actual val asF32: IndexQuery<FloatArray> by lazy {
-        object : IndexQuery<FloatArray> {
-            override fun add(key: ULong, vec: FloatArray) {
+        object : NullSafeIndexQuery<FloatArray>() {
+            override fun isEmpty(vec: FloatArray): Boolean = vec.isEmpty()
+
+            override fun addNotEmpty(key: ULong, vec: FloatArray) {
                 NativeMethods.bridge.usearch_add_f32(ptr, key.toLong(), vec)
             }
 
@@ -76,8 +80,10 @@ actual class Index(
     }
 
     actual val asF64: IndexQuery<DoubleArray> by lazy {
-        object : IndexQuery<DoubleArray> {
-            override fun add(key: ULong, vec: DoubleArray) {
+        object : NullSafeIndexQuery<DoubleArray>() {
+            override fun isEmpty(vec: DoubleArray): Boolean = vec.isEmpty()
+
+            override fun addNotEmpty(key: ULong, vec: DoubleArray) {
                 NativeMethods.bridge.usearch_add_f64(ptr, key.toLong(), vec)
             }
 
@@ -91,8 +97,10 @@ actual class Index(
     }
 
     actual val asF16: IndexQuery<Float16Array> by lazy {
-        object : IndexQuery<Float16Array> {
-            override fun add(key: ULong, vec: Float16Array) {
+        object : NullSafeIndexQuery<Float16Array>() {
+            override fun isEmpty(vec: Float16Array): Boolean = vec.isEmpty()
+
+            override fun addNotEmpty(key: ULong, vec: Float16Array) {
                 NativeMethods.bridge.usearch_add_f16(ptr, key.toLong(), vec.toRawBits())
             }
 
@@ -108,8 +116,10 @@ actual class Index(
     }
 
     actual val asI8: IndexQuery<ByteArray> by lazy {
-        object : IndexQuery<ByteArray> {
-            override fun add(key: ULong, vec: ByteArray) {
+        object : NullSafeIndexQuery<ByteArray>() {
+            override fun isEmpty(vec: ByteArray): Boolean = vec.isEmpty()
+
+            override fun addNotEmpty(key: ULong, vec: ByteArray) {
                 NativeMethods.bridge.usearch_add_i8(ptr, key.toLong(), vec)
             }
 
@@ -123,8 +133,10 @@ actual class Index(
     }
 
     actual val asB1x8: IndexQuery<ByteArray> by lazy {
-        object : IndexQuery<ByteArray> {
-            override fun add(key: ULong, vec: ByteArray) {
+        object : NullSafeIndexQuery<ByteArray>() {
+            override fun isEmpty(vec: ByteArray): Boolean = vec.isEmpty()
+
+            override fun addNotEmpty(key: ULong, vec: ByteArray) {
                 NativeMethods.bridge.usearch_add_b1(ptr, key.toLong(), vec)
             }
 
@@ -157,6 +169,10 @@ actual class Index(
     }
 
     actual fun loadBuffer(buffer: ByteArray) {
+        if (buffer.isEmpty()) {
+            throw IllegalArgumentException("Cannot load from empty buffer.")
+        }
+
         NativeMethods.bridge.usearch_load_buffer(ptr, buffer)
     }
 
@@ -165,6 +181,9 @@ actual class Index(
     }
 
     actual fun saveBuffer(buffer: ByteArray) {
+        if (buffer.isEmpty()) {
+            throw IllegalArgumentException("Cannot save to empty buffer.")
+        }
         NativeMethods.bridge.usearch_save_buffer(ptr, buffer)
     }
 
@@ -175,4 +194,16 @@ actual class Index(
     actual companion object {
         actual val INITIAL_CAPACITY: Long = 5L
     }
+}
+
+private abstract class NullSafeIndexQuery<T> : IndexQuery<T> {
+    final override fun add(key: ULong, vec: T) {
+        if (isEmpty(vec)) {
+            throw IllegalArgumentException("Cannot add empty vector.")
+        }
+        addNotEmpty(key, vec)
+    }
+
+    abstract fun isEmpty(vec: T): Boolean
+    abstract fun addNotEmpty(key: ULong, vec: T)
 }
