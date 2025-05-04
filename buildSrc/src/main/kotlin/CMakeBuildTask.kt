@@ -64,27 +64,6 @@ abstract class CMakeBuildTask : DefaultTask() {
         if (buildClean.getOrElse(false)) {
             parameters.add("--clean-first")
         }
-        when (konanTarget.orNull) {
-            KonanTarget.IOS_SIMULATOR_ARM64 -> {
-                parameters.add("--")
-                parameters.add("-sdk")
-                parameters.add("iphonesimulator")
-            }
-
-            KonanTarget.TVOS_SIMULATOR_ARM64 -> {
-                parameters.add("--")
-                parameters.add("-sdk")
-                parameters.add("appletvsimulator")
-            }
-
-            KonanTarget.WATCHOS_SIMULATOR_ARM64 -> {
-                parameters.add("--")
-                parameters.add("-sdk")
-                parameters.add("watchsimulator")
-            }
-
-            else -> {}
-        }
         return parameters
     }
 

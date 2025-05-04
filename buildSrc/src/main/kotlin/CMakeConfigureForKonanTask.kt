@@ -123,6 +123,22 @@ abstract class CMakeConfigureForKonanTask : CMakeConfigureTask() {
                         put("CMAKE_CXX_COMPILER", "$compilerSeries-g++")
                     }
                 }
+
+                when (target) {
+                    KonanTarget.IOS_SIMULATOR_ARM64 -> {
+                        put("CMAKE_OSX_SYSROOT", "iphonesimulator")
+                    }
+
+                    KonanTarget.TVOS_SIMULATOR_ARM64 -> {
+                        put("CMAKE_OSX_SYSROOT", "appletvsimulator")
+                    }
+
+                    KonanTarget.WATCHOS_SIMULATOR_ARM64 -> {
+                        put("CMAKE_OSX_SYSROOT", "watchsimulator")
+                    }
+
+                    else -> {}
+                }
             }
         })
     }

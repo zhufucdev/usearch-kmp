@@ -21,6 +21,6 @@ a similarity search & clustering engine for vectors.
 This project is on Maven Central, which can be accessed as such:
 ```kotlin
 dependencies {
-    implementation("com.zhufucdev.usearch:core:0.2.2")
+    implementation("com.zhufucdev.usearch:core:0.2.4")
 }
 ```
