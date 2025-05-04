@@ -141,6 +141,7 @@ internal fun install(
     val cmakeBuildTask = project.tasks.create("cmakeBuild${taskName}", CMakeBuildTask::class.java) {
         configureFromProject()
         workingFolder.value(wd)
+        konanTarget.set(target)
         dependsOn(cmakeConfigTask)
     }
 
