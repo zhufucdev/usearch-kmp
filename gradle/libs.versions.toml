@@ -4,7 +4,6 @@ kotest = "5.8.0"
 kotlin = "2.1.0"
 dokka = "2.0.0"
 androidxTest = "1.2.1"
-cmake = "3.1.0"
 mavenPublisher = "0.30.0"
 
 [libraries]
@@ -27,4 +26,3 @@ androidLibrary = { id = "com.android.library", version.ref = "agp" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 mavenPublisher = { id = "com.vanniktech.maven.publish", version.ref = "mavenPublisher" }
-cmake = { id = "org.xbib.gradle.plugin.cmake", version.ref = "cmake" }

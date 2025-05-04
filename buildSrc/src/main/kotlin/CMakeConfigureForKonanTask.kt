@@ -2,7 +2,6 @@ import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.jetbrains.kotlin.konan.target.Architecture
 import org.jetbrains.kotlin.konan.target.KonanTarget
-import org.xbib.gradle.plugin.cmake.CMakeConfigureTask
 import java.io.File
 import java.util.*
 import kotlin.io.path.Path
@@ -23,7 +22,7 @@ abstract class CMakeConfigureForKonanTask : CMakeConfigureTask() {
     }
 
     init {
-        buildType.set("DEBUG")
+        buildType.set("RELEASE")
 
         def.value(target.zip(buildType) { t, b -> t to b }.map { (target, buildType) ->
             buildMap {

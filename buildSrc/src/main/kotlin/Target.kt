@@ -12,7 +12,6 @@ import org.gradle.language.jvm.tasks.ProcessResources
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 import org.jetbrains.kotlin.konan.target.KonanTarget
-import org.xbib.gradle.plugin.cmake.CMakeBuildTask
 
 data class AndroidSetup(val jniTasks: List<Task>, val jniDirectory: Provider<Directory>)
 

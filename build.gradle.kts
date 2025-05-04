@@ -9,8 +9,13 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     `maven-publish`
     bridge
+    cmake
     alias(libs.plugins.dokka)
     alias(libs.plugins.mavenPublisher)
+}
+
+cmake {
+    sourceFolder = file("$projectDir/src/cppMain")
 }
 
 val headerGenerator = tasks.create("generateJniHeaders", JniHeaderTask::class) {
@@ -167,7 +172,7 @@ mavenPublishing {
     publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
     signAllPublications()
 
-    coordinates(Library.namespace, "core", "0.2.2")
+    coordinates(Library.namespace, "core", "0.2.3")
     pom {
         name = "USearch KMP"
         description = "Kotlin Multiplatform binding for USearch."

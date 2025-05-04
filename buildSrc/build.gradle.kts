@@ -15,5 +15,4 @@ fun plugin(provider: Provider<PluginDependency>) = with(provider.get()) {
 dependencies {
     implementation(plugin(libs.plugins.kotlin.multiplatform))
     implementation(plugin(libs.plugins.androidLibrary))
-    implementation(plugin(libs.plugins.cmake))
 }
