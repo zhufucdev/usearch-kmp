@@ -3,8 +3,9 @@ package usearch
 @OptIn(ExperimentalUnsignedTypes::class)
 actual data class Matches(
     actual val keys: List<ULong>,
-    actual val distances: List<Float>
-) {
+    actual val distances: List<Float>,
+    private val size: Int
+) : Iterable<Match> {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false
@@ -21,5 +22,11 @@ actual data class Matches(
         var result = keys.hashCode()
         result = 31 * result + distances.hashCode()
         return result
+    }
+
+    actual override fun iterator(): Iterator<Match> = iterator {
+        for (i in 0 until size) {
+            yield(Match(keys[i], distances[i]))
+        }
     }
 }

@@ -130,11 +130,11 @@ actual class Index {
                     distances,
                     err
                 )
-            }
+            }.toInt()
             Matches(
-                keys = object : DelegatedList<usearch_key_t>(count.toInt()) {
+                keys = object : DelegatedList<usearch_key_t>(count) {
                     override fun get(index: Int): usearch_key_t {
-                        if (index >= count.toInt()) {
+                        if (index >= count) {
                             throw IndexOutOfBoundsException("index $index is out of bounds")
                         }
                         return keys[index]
@@ -144,9 +144,9 @@ actual class Index {
                         nativeHeap.free(it)
                     }
                 },
-                distances = object : DelegatedList<Float>(count.toInt()) {
+                distances = object : DelegatedList<Float>(count) {
                     override fun get(index: Int): Float {
-                        if (index >= count.toInt()) {
+                        if (index >= count) {
                             throw IndexOutOfBoundsException("index $index is out of bounds")
                         }
                         return distances[index]
@@ -156,6 +156,7 @@ actual class Index {
                         nativeHeap.free(it)
                     }
                 },
+                size = count,
             )
         }
     }
