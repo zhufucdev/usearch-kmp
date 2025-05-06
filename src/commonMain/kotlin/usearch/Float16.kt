@@ -89,6 +89,26 @@ value class Float16(internal val rawBits: Short) {
         // Delegate to Float's toString for standard representation
         return this.toFloat().toString()
     }
+
+    operator fun plus(other: Float16): Float16 = (toFloat() + other.toFloat()).toFloat16()
+    operator fun plus(other: Float): Float = toFloat() + other
+    operator fun plus(other: Double): Double = toDouble() + other
+
+    operator fun minus(other: Float16): Float16 = (toFloat() - other.toFloat()).toFloat16()
+    operator fun minus(other: Float): Float = toFloat() - other
+    operator fun minus(other: Double): Double = toDouble() - other
+
+    operator fun times(other: Float16): Float16 = (toFloat() * other.toFloat()).toFloat16()
+    operator fun times(other: Float): Float = toFloat() * other
+    operator fun times(other: Double): Double = toDouble() * other
+
+    operator fun div(other: Float16): Float16 = (toFloat() / other.toFloat()).toFloat16()
+    operator fun div(other: Float): Float = toFloat() / other
+    operator fun div(other: Double): Double = toDouble() / other
+
+    operator fun rem(other: Float16): Float16 = (toFloat().rem(other.toFloat())).toFloat16()
+    operator fun rem(other: Float): Float = toFloat().rem(other)
+    operator fun rem(other: Double): Double = toDouble().rem(other)
 }
 
 /**
@@ -511,6 +531,7 @@ fun Float16.isFinite() = !isInfinite()
  * Get the internal binary representation.
  */
 fun Float16.toRawBits() = rawBits
+
 
 class Float16Array : Iterable<Float16> {
     internal val inner: ShortArray
