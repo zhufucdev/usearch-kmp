@@ -10,7 +10,6 @@ import kotlin.contracts.contract
 
 abstract class ErrorScope : AutofreeScope() {
     abstract val err: CPointer<usearch_error_tVar>
-    abstract val memScope: MemScope
 }
 
 @OptIn(ExperimentalContracts::class)
@@ -26,9 +25,6 @@ inline fun <T> errorScoped(block: (ErrorScope.() -> T)): T {
                 get() = err.ptr
 
             override fun alloc(size: Long, align: Int): NativePointed = this@memScoped.alloc(size, align)
-
-            override val memScope: MemScope
-                get() = this@memScoped
         })
         err.value?.toKString()?.let {
             throw USearchException(it)
