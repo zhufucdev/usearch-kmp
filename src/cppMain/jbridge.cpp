@@ -10,11 +10,6 @@ extern "C" {
 
 using search_result_t = unum::usearch::index_dense_gt<>::search_result_t;
 
-template<typename T>
-struct value_proxy {
-    T inner;
-};
-
 template<typename T, typename ArrayConstructor, typename Region>
 jobjectArray jarray_usearch_get(const char *type_name, ArrayConstructor new_array, Region set_array_region, JNIEnv *env,
                                 const jlong ptr,
@@ -293,7 +288,7 @@ JNIEXPORT void JNICALL Java_usearch_NativeBridge_usearch_1add_1b1
 }
 
 JNIEXPORT jobjectArray JNICALL Java_usearch_NativeBridge_usearch_1get_1b1
-(JNIEnv * env, jobject, jlong ptr, jlong key, jlong count) {
+(JNIEnv *env, jobject, jlong ptr, jlong key, jlong count) {
     return jarray_usearch_get<jbyte>(
         "[B", [](JNIEnv *env, jsize dim) { return env->NewByteArray(dim); },
         [](JNIEnv *env, jbyteArray arr, jsize start, jsize length, jbyte *source) {
@@ -304,17 +299,22 @@ JNIEXPORT jobjectArray JNICALL Java_usearch_NativeBridge_usearch_1get_1b1
 }
 
 JNIEXPORT jlong JNICALL Java_usearch_NativeBridge_usearch_1search
-(JNIEnv *env, jobject, jlong ptr, jfloatArray query, jint count) {
-    const auto p = reinterpret_cast<unum::usearch::index_dense_t *>(ptr);
-    const auto query_len = env->GetArrayLength(query);
-    auto *query_buf = new jfloat[query_len];
-    auto result = p->search(query_buf, count);
-    delete[] query_buf;
-    if (!result) {
-        throw_usearch_exception(env, result.error.release());
+(JNIEnv *env, jobject, jlong ptr, jfloatArray query, jint count, jlongArray keys, jfloatArray distances) {
+    const auto p = reinterpret_cast<usearch_index_t *>(ptr);
+    const auto arr = env->GetFloatArrayElements(query, nullptr);
+    const auto key_arr = env->GetLongArrayElements(keys, nullptr);
+    const auto distances_arr = env->GetFloatArrayElements(distances, nullptr);
+    usearch_error_t err = nullptr;
+    const auto size = usearch_search(p, arr, usearch_scalar_f32_k, static_cast<size_t>(count),
+                                     reinterpret_cast<usearch_key_t *>(key_arr), distances_arr, &err);
+    if (err) {
+        throw_usearch_exception(env, err);
         return 0;
     }
-    return reinterpret_cast<jlong>(new value_proxy<search_result_t>{std::move(result)});
+    env->ReleaseFloatArrayElements(query, arr, JNI_OK);
+    env->ReleaseLongArrayElements(keys, key_arr, JNI_OK);
+    env->ReleaseFloatArrayElements(distances, distances_arr, JNI_OK);
+    return static_cast<jlong>(size);
 }
 
 
@@ -339,33 +339,6 @@ JNIEXPORT jlong JNICALL Java_usearch_NativeBridge_usearch_1capacity
         throw_usearch_exception(env, err);
     }
     return static_cast<jlong>(cap);
-}
-
-JNIEXPORT jlong JNICALL Java_usearch_NativeBridge_usearch_1sresult_1key_1at
-(JNIEnv *env, jobject, jlong ptr, jint index) {
-    const auto p = reinterpret_cast<value_proxy<search_result_t> *>(ptr);
-    if (p->inner.count <= index) {
-        throw_index_out_of_bounds(env, index);
-        return 0;
-    }
-    return p->inner[index].member.key;
-}
-
-
-JNIEXPORT jfloat JNICALL Java_usearch_NativeBridge_usearch_1sresult_1distance_1at
-(JNIEnv *env, jobject, jlong ptr, jint index) {
-    const auto p = reinterpret_cast<value_proxy<search_result_t> *>(ptr);
-    if (p->inner.count <= index) {
-        throw_index_out_of_bounds(env, index);
-        return 0;
-    }
-    return p->inner[index].distance;
-}
-
-JNIEXPORT jint JNICALL Java_usearch_NativeBridge_usearch_1sresult_1size
-(JNIEnv *env, jobject, jlong ptr) {
-    const auto p = reinterpret_cast<value_proxy<search_result_t> *>(ptr);
-    return static_cast<jint>(p->inner.count);
 }
 
 JNIEXPORT void JNICALL Java_usearch_NativeBridge_usearch_1reserve

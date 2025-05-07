@@ -32,6 +32,8 @@ actual class Index {
                 }
             } catch (e: IllegalStateException) {
                 println("Error calling usearch_free: ${e.message}")
+            } finally {
+                it.dispose()
             }
         }
     }
@@ -117,10 +119,10 @@ actual class Index {
     actual val asB1x8: IndexQuery<ByteArray> by lazy(::B1Q)
 
     actual fun search(query: FloatArray, count: Int): Matches {
-        val keys = nativeHeap.allocArray<usearch_key_tVar>(count)
-        val distances = nativeHeap.allocArray<FloatVar>(count)
         return errorScoped {
-            val count = query.usePinned {
+            val keys = allocArray<usearch_key_tVar>(count)
+            val distances = allocArray<FloatVar>(count)
+            val size = query.usePinned {
                 usearch_search(
                     inner.asCPointer(),
                     it.addressOf(0),
@@ -131,33 +133,7 @@ actual class Index {
                     err
                 )
             }.toInt()
-            Matches(
-                keys = object : DelegatedList<usearch_key_t>(count) {
-                    override fun get(index: Int): usearch_key_t {
-                        if (index >= count) {
-                            throw IndexOutOfBoundsException("index $index is out of bounds")
-                        }
-                        return keys[index]
-                    }
-
-                    val cleaner = createCleaner(keys) {
-                        nativeHeap.free(it)
-                    }
-                },
-                distances = object : DelegatedList<Float>(count) {
-                    override fun get(index: Int): Float {
-                        if (index >= count) {
-                            throw IndexOutOfBoundsException("index $index is out of bounds")
-                        }
-                        return distances[index]
-                    }
-
-                    val cleaner = createCleaner(distances) {
-                        nativeHeap.free(it)
-                    }
-                },
-                size = count,
-            )
+            Matches(List(size) { keys[it] }, List(size) { distances[it] })
         }
     }
 

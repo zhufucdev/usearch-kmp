@@ -1,10 +1,11 @@
 package usearch
 
-@OptIn(ExperimentalUnsignedTypes::class)
+import kotlinx.cinterop.ExperimentalForeignApi
+
+@OptIn(ExperimentalUnsignedTypes::class, ExperimentalForeignApi::class)
 actual data class Matches(
     actual val keys: List<ULong>,
-    actual val distances: List<Float>,
-    private val size: Int
+    actual val distances: List<Float>
 ) : Iterable<Match> {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -25,7 +26,7 @@ actual data class Matches(
     }
 
     actual override fun iterator(): Iterator<Match> = iterator {
-        for (i in 0 until size) {
+        for (i in 0 until keys.size) {
             yield(Match(keys[i], distances[i]))
         }
     }

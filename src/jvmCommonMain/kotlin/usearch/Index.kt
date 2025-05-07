@@ -75,8 +75,13 @@ actual class Index(
     actual val asB1x8: IndexQuery<ByteArray> by lazy(::B1Q)
 
     actual fun search(query: FloatArray, count: Int): Matches {
-        val p = NativeMethods.bridge.usearch_search(ptr, query, count)
-        return Matches(p)
+        val keys = LongArray(count)
+        val distances = FloatArray(count)
+        val size = NativeMethods.bridge.usearch_search(ptr, query, count, keys, distances).toInt()
+        return Matches(
+            keys.slice(0 until size).map { it.toULong() },
+            distances.slice(0 until size)
+        )
     }
 
     actual val size: ULong

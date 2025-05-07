@@ -53,13 +53,7 @@ public class NativeBridge {
 
     public native byte[][] usearch_get_b1(long index_ptr, long key, long count);
 
-    public native long usearch_search(long index_ptr, float[] query, int count);
-
-    public native long usearch_sresult_key_at(long ptr, int index);
-
-    public native float usearch_sresult_distance_at(long ptr, int index);
-
-    public native int usearch_sresult_size(long ptr);
+    public native long usearch_search(long index_ptr, float[] query, int count, long[] keys, float[] distances);
 
     public native void usearch_reserve(long ptr, long capacity);
 
