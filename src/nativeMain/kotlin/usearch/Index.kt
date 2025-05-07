@@ -181,11 +181,12 @@ actual class Index {
         }
     }
 
-    abstract inner class CommonIndexQuery<T : Any>(val vectorKind: ScalarKind) : IndexQuery<T> {
-        abstract fun constructDefaultArray(size: Int): T
-        abstract fun Pinned<T>.addr(index: Int): CPointer<*>
+    abstract inner class CommonIndexQuery<T : Any, C : CPrimitiveVar>(val vectorKind: ScalarKind) : IndexQuery<T> {
+        abstract fun AutofreeScope.constructDefaultArray(size: Int): CPointer<C>
+        abstract fun MemScope.ptr(vec: T): CPointer<C>
         abstract fun T.slice(indices: IntRange): T
         abstract fun isEmpty(vec: T): Boolean
+        abstract fun CPointer<C>.toKt(size: Int): T
 
         override fun add(key: ULong, vec: T) {
             if (isEmpty(vec)) {
@@ -195,30 +196,25 @@ actual class Index {
                 reserve(INCREMENTAL_CAPACITY.toULong())
             }
             errorScoped {
-                vec.usePinned {
-                    usearch_add(inner.asCPointer(), key, it.addr(0), vectorKind.nativeEnum, err)
-                }
+                usearch_add(inner.asCPointer(), key, memScope.ptr(vec), vectorKind.nativeEnum, err)
             }
         }
 
         override fun get(key: ULong): T? = errorScoped {
-            constructDefaultArray(dimensions.toInt()).apply {
-                usePinned {
-                    val actualCount = usearch_get(inner.asCPointer(), key, 1u, it.addr(0), vectorKind.nativeEnum, err)
-                    if (actualCount < 1u) {
-                        return@errorScoped null
-                    }
-                }
+            val buf = constructDefaultArray(dimensions.toInt())
+            val actualCount = usearch_get(inner.asCPointer(), key, 1u, buf, vectorKind.nativeEnum, err)
+            if (actualCount < 1u) {
+                return@errorScoped null
+            } else {
+                buf.toKt(dimensions.toInt())
             }
         }
 
         override fun get(key: ULong, count: ULong): List<T> = errorScoped {
             val dimensions = dimensions.toInt()
-            constructDefaultArray(dimensions * count.toInt()).apply {
-                usePinned {
-                    usearch_get(inner.asCPointer(), key, count, it.addr(0), usearch_scalar_f32_k, err)
-                }
-            }.let {
+            val buf = constructDefaultArray(dimensions * count.toInt())
+            val count = usearch_get(inner.asCPointer(), key, count, buf, usearch_scalar_f32_k, err)
+            buf.toKt(count.toInt() * dimensions).let {
                 (0 until count.toInt()).map { part ->
                     it.slice(part * dimensions until (part + 1) * dimensions)
                 }
@@ -226,53 +222,43 @@ actual class Index {
         }
     }
 
-    inner class F32Q : CommonIndexQuery<FloatArray>(ScalarKind.F32) {
-        override fun isEmpty(vec: FloatArray): Boolean = vec.isEmpty()
-
-        override fun constructDefaultArray(size: Int): FloatArray = FloatArray(size)
-
-        override fun Pinned<FloatArray>.addr(index: Int): CPointer<*> = addressOf(index)
-
+    inner class F32Q : CommonIndexQuery<FloatArray, FloatVar>(ScalarKind.F32) {
+        override fun AutofreeScope.constructDefaultArray(size: Int): CPointer<FloatVar> = allocArray(size)
+        override fun MemScope.ptr(vec: FloatArray): CPointer<FloatVar> = vec.toCValues().ptr
         override fun FloatArray.slice(indices: IntRange): FloatArray = sliceArray(indices)
+        override fun isEmpty(vec: FloatArray): Boolean = vec.isEmpty()
+        override fun CPointer<FloatVar>.toKt(size: Int): FloatArray = FloatArray(size, ::get)
     }
 
-    inner class F64Q : CommonIndexQuery<DoubleArray>(ScalarKind.F64) {
+    inner class F64Q : CommonIndexQuery<DoubleArray, DoubleVar>(ScalarKind.F64) {
         override fun isEmpty(vec: DoubleArray): Boolean = vec.isEmpty()
-
-        override fun constructDefaultArray(size: Int): DoubleArray = DoubleArray(size)
-
-        override fun Pinned<DoubleArray>.addr(index: Int): CPointer<*> = addressOf(index)
-
+        override fun CPointer<DoubleVar>.toKt(size: Int): DoubleArray = DoubleArray(size, ::get)
+        override fun AutofreeScope.constructDefaultArray(size: Int): CPointer<DoubleVar> = allocArray(size)
+        override fun MemScope.ptr(vec: DoubleArray): CPointer<DoubleVar> = vec.toCValues().ptr
         override fun DoubleArray.slice(indices: IntRange): DoubleArray = sliceArray(this@slice.indices)
     }
 
-    inner class F16Q : CommonIndexQuery<Float16Array>(ScalarKind.F16) {
+    inner class F16Q : CommonIndexQuery<Float16Array, ShortVar>(ScalarKind.F16) {
         override fun isEmpty(vec: Float16Array): Boolean = vec.isEmpty()
-
-        override fun constructDefaultArray(size: Int): Float16Array = Float16Array(size)
-
-        override fun Pinned<Float16Array>.addr(index: Int): CPointer<*> = get().inner.usePinned { it.addressOf(index) }
-
+        override fun CPointer<ShortVar>.toKt(size: Int): Float16Array = Float16Array(size) { Float16(get(it)) }
+        override fun AutofreeScope.constructDefaultArray(size: Int): CPointer<ShortVar> = allocArray(size)
+        override fun MemScope.ptr(vec: Float16Array): CPointer<ShortVar> = vec.toRawBits().toCValues().ptr
         override fun Float16Array.slice(indices: IntRange): Float16Array = sliceArray(indices)
     }
 
-    inner class I8Q : CommonIndexQuery<ByteArray>(ScalarKind.I8) {
+    inner class I8Q : CommonIndexQuery<ByteArray, ByteVar>(ScalarKind.I8) {
         override fun isEmpty(vec: ByteArray): Boolean = vec.isEmpty()
-
-        override fun constructDefaultArray(size: Int): ByteArray = ByteArray(size)
-
-        override fun Pinned<ByteArray>.addr(index: Int): CPointer<*> = addressOf(index)
-
+        override fun CPointer<ByteVar>.toKt(size: Int): ByteArray = ByteArray(size, ::get)
+        override fun AutofreeScope.constructDefaultArray(size: Int): CPointer<ByteVar> = allocArray(size)
+        override fun MemScope.ptr(vec: ByteArray): CPointer<ByteVar> = vec.toCValues().ptr
         override fun ByteArray.slice(indices: IntRange): ByteArray = sliceArray(indices)
     }
 
-    inner class B1Q : CommonIndexQuery<ByteArray>(ScalarKind.B1) {
+    inner class B1Q : CommonIndexQuery<ByteArray, ByteVar>(ScalarKind.B1) {
         override fun isEmpty(vec: ByteArray): Boolean = vec.isEmpty()
-
-        override fun constructDefaultArray(size: Int): ByteArray = ByteArray(size)
-
-        override fun Pinned<ByteArray>.addr(index: Int): CPointer<*> = addressOf(index)
-
+        override fun CPointer<ByteVar>.toKt(size: Int): ByteArray = ByteArray(size, ::get)
+        override fun AutofreeScope.constructDefaultArray(size: Int): CPointer<ByteVar> = allocArray(size)
+        override fun MemScope.ptr(vec: ByteArray): CPointer<ByteVar> = vec.toCValues().ptr
         override fun ByteArray.slice(indices: IntRange): ByteArray = sliceArray(indices)
     }
 
