@@ -16,7 +16,7 @@ actual class Index {
     actual constructor(options: IndexOptions) {
         val opts = options.native()
         errorScoped {
-            inner = usearch_init(opts.getPointer(this), err)?.asStableRef()
+            inner = usearch_init(opts, err)?.asStableRef()
                 ?: error("No error returned while init ptr is null.")
             _metricKind = options.metric
         }
@@ -90,6 +90,11 @@ actual class Index {
     actual val memoryUsage: ULong
         get() = errorScoped {
             usearch_memory_usage(inner.asCPointer(), err)
+        }
+
+    actual val serializedLength: ULong
+        get() = errorScoped {
+            usearch_serialized_length(inner.asCPointer(), err)
         }
 
     actual fun add(key: ULong, f32Vector: FloatArray) {

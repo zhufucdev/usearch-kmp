@@ -93,6 +93,9 @@ actual class Index(
     actual val memoryUsage: ULong
         get() = NativeMethods.bridge.usearch_memory_usage(ptr).toULong()
 
+    actual val serializedLength: ULong
+        get() = NativeMethods.bridge.usearch_serialized_length(ptr).toULong()
+
     actual fun loadFile(filePath: String) {
         NativeMethods.bridge.usearch_load_file(ptr, filePath)
     }

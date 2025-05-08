@@ -41,6 +41,11 @@ expect class Index(options: IndexOptions) {
      */
     val hardwareAcceleration: String?
 
+    /**
+     * Reports the expected file size after serialization.
+     */
+    val serializedLength: ULong
+
     @Deprecated("Use explicit add instead", ReplaceWith("asF32.add"))
     fun add(key: ULong, f32Vector: FloatArray)
 
