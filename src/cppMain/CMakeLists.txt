@@ -10,8 +10,10 @@ FetchContent_MakeAvailable(vendor)
 include_directories(${vendor_SOURCE_DIR}/include ${vendor_SOURCE_DIR}/fp16/include)
 
 if (BUILD_SHARED_LIBS MATCHES ON)
+    set(JAVA_INCLUDE_PATH "$ENV{JAVA_HOME}/include")
+
     find_package(Java REQUIRED)
-    find_package(JNI REQUIRED)
+    find_package(JNI)
 
     include_directories(${JNI_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR}/bridging)
     add_library(ksearch SHARED

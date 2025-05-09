@@ -15,32 +15,32 @@ class CMakeExecutor internal constructor(private val logger: Logger, private val
         val pb = ProcessBuilder(cmdLine)
         pb.directory(workingFolder)
         try {
-            Executors.newFixedThreadPool(2).use { executor ->
-                // make sure working folder exists
-                val b = workingFolder.mkdirs()
-                // start
-                val process = pb.start()
-                val stdoutFuture = executor.submit<Void?> {
-                    readStream(process.inputStream, true)
-                    null
-                }
-                val stderrFuture = executor.submit<Void?> {
-                    readStream(process.errorStream, false)
-                    null
-                }
-                val retCode = process.waitFor()
-                warnIfTimeout(
-                    stdoutFuture,
-                    "CMakeExecutor[$taskName]Warn: timed out waiting for stdout to be closed."
-                )
-                warnIfTimeout(
-                    stderrFuture,
-                    "CMakeExecutor[$taskName]Warn: timed out waiting for stderr to be closed."
-                )
-                if (retCode != 0) {
-                    throw GradleException("[$taskName]Error: CMAKE returned $retCode")
-                }
+            val executor = Executors.newFixedThreadPool(2)
+            // make sure working folder exists
+            val b = workingFolder.mkdirs()
+            // start
+            val process = pb.start()
+            val stdoutFuture = executor.submit<Void?> {
+                readStream(process.inputStream, true)
+                null
             }
+            val stderrFuture = executor.submit<Void?> {
+                readStream(process.errorStream, false)
+                null
+            }
+            val retCode = process.waitFor()
+            warnIfTimeout(
+                stdoutFuture,
+                "CMakeExecutor[$taskName]Warn: timed out waiting for stdout to be closed."
+            )
+            warnIfTimeout(
+                stderrFuture,
+                "CMakeExecutor[$taskName]Warn: timed out waiting for stderr to be closed."
+            )
+            if (retCode != 0) {
+                throw GradleException("[$taskName]Error: CMAKE returned $retCode")
+            }
+            executor.shutdown()
         } catch (e: IOException) {
             throw GradleScriptException("CMakeExecutor[$taskName].", e)
         } catch (e: InterruptedException) {

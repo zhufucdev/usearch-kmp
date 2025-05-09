@@ -50,7 +50,7 @@ class IndexTest {
     @Test
     fun saveBuffer() {
         val index = exampleIndex
-        val buffer = ByteArray(4 shl 10)
+        val buffer = ByteArray(index.serializedLength.toInt())
         index.saveBuffer(buffer)
 
         val load = Index(exampleOpts)

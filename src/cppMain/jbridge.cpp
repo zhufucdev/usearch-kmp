@@ -164,7 +164,7 @@ JNIEXPORT jlong JNICALL Java_usearch_NativeBridge_usearch_1memory_1usage
     return r;
 }
 
-JNIEXPORT jlong JNICALL Java_usearch_NativeBridge_usearch_serialized_1length
+JNIEXPORT jlong JNICALL Java_usearch_NativeBridge_usearch_1serialized_1length
 (JNIEnv *env, jobject, jlong ptr) {
     const auto p = reinterpret_cast<usearch_index_t *>(ptr);
     usearch_error_t err = nullptr;
