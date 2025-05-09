@@ -104,7 +104,9 @@ kotlin {
             }
         }
         val jvmMain by getting {
-
+            dependencies {
+                implementation(files(headerGenerator.destinationDirectory))
+            }
         }
         val jvmTest by getting {
             dependencies {
@@ -114,10 +116,6 @@ kotlin {
         val jvmCommonMain by getting {
             kotlin {
                 srcDir(headerGenerator.classpath.singleFile)
-            }
-
-            dependencies {
-                implementation(files(headerGenerator.destinationDirectory))
             }
         }
         val nativeMain by getting {
@@ -147,8 +145,9 @@ androidComponents {
 }
 
 android {
-    sourceSets.configureEach {
+    sourceSets.named("main") {
         jniLibs.srcDir(androidSetup.jniDirectory)
+        java.srcDir(headerGenerator.classpath.singleFile)
     }
 }
 
