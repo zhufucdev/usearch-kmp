@@ -105,7 +105,7 @@ kotlin {
         }
         val jvmMain by getting {
             dependencies {
-                implementation(files(headerGenerator.destinationDirectory))
+                compileOnly(files(headerGenerator.destinationDirectory))
             }
         }
         val jvmTest by getting {
@@ -158,6 +158,9 @@ afterEvaluate {
         sourceCompatibility = "11"
         targetCompatibility = "11"
     }
+    tasks.named("jvmJar", org.gradle.jvm.tasks.Jar::class) {
+        from(headerGenerator.destinationDirectory)
+    }
 }
 
 mavenPublishing {
@@ -172,7 +175,7 @@ mavenPublishing {
     publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
     signAllPublications()
 
-    coordinates(Library.namespace, "core", "0.4.2")
+    coordinates(Library.namespace, "core", "0.4.3")
     pom {
         name = "USearch KMP"
         description = "Kotlin Multiplatform binding for USearch."
