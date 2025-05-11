@@ -1,6 +1,7 @@
 import kotlinx.coroutines.*
 import usearch.*
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 
 class LeakTest {
     @Test
@@ -29,6 +30,25 @@ class LeakTest {
                         break
                     }
                 }
+            }
+        }
+    }
+
+    @Test
+    fun testSave() {
+        val index = Index(IndexOptions(512u, MetricKind.Cos, ScalarKind.F16))
+        for (i in 0 until 72) {
+            index.asF32.add(i.toULong(), FloatArray(512) { (it + i).toFloat() })
+        }
+        val ba = ByteArray(index.serializedLength.toInt())
+        index.saveBuffer(ba)
+        val loadedIndex = Index(IndexOptions(512u, MetricKind.Cos, ScalarKind.F16)).apply {
+            loadBuffer(ba)
+        }
+        runBlocking {
+            for (i in 0 until 72) {
+                val query = FloatArray(512) { (it + i).toFloat() }
+                assertContentEquals(index.search(query, 10), loadedIndex.search(query, 10))
             }
         }
     }
