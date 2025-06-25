@@ -95,14 +95,6 @@ actual class Index {
             usearch_serialized_length(inner.asCPointer(), err)
         }
 
-    actual fun add(key: ULong, f32Vector: FloatArray) {
-        asF32.add(key, f32Vector)
-    }
-
-    actual fun add(key: ULong, f64Vector: DoubleArray) {
-        asF64.add(key, f64Vector)
-    }
-
     actual fun remove(key: ULong) {
         errorScoped {
             usearch_remove(inner.asCPointer(), key, err)
@@ -139,6 +131,11 @@ actual class Index {
             Matches(List(size) { keys[it] }, List(size) { distances[it] })
         }
     }
+
+    actual operator fun contains(key: ULong): Boolean =
+        errorScoped {
+            usearch_contains(inner.asCPointer(), key, err)
+        }
 
     actual fun loadFile(filePath: String) {
         errorScoped {

@@ -11,6 +11,7 @@ import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class IndexTest {
     private val exampleOpts get() = IndexOptions(3u, MetricKind.Cos, ScalarKind.F32)
@@ -19,7 +20,7 @@ class IndexTest {
             val index = Index(exampleOpts)
             val vec = floatArrayOf(3.7f, 4.9f, -36f)
             (0..10).forEach {
-                index.add(it.toULong(), vec)
+                index.asF32.add(it.toULong(), vec)
             }
             return index
         }
@@ -45,6 +46,15 @@ class IndexTest {
         index.asF32.add(2u, b)
         val matches = index.search(a, 2)
         assertContentEquals(ulongArrayOf(1u, 2u), matches.keys.sorted())
+    }
+
+    @Test
+    fun contains() {
+        (0 .. 10).forEach {
+            assertTrue {
+                exampleIndex.contains(it.toULong())
+            }
+        }
     }
 
     @Test

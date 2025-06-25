@@ -329,6 +329,9 @@ JNIEXPORT jlong JNICALL Java_usearch_NativeBridge_usearch_1search
     return static_cast<jlong>(size);
 }
 
+JNIEXPORT jboolean JNICALL Java_usearch_NativeBridge_usearch_1contains(JNIEnv *, jobject, jlong ptr, jlong key) {
+    return reinterpret_cast<unum::usearch::index_dense_t *>(ptr)->contains(key);
+}
 
 JNIEXPORT jlong JNICALL Java_usearch_NativeBridge_usearch_1size
 (JNIEnv *env, jobject, jlong ptr) {

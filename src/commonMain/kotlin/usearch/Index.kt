@@ -46,12 +46,6 @@ expect class Index(options: IndexOptions) {
      */
     val serializedLength: ULong
 
-    @Deprecated("Use explicit add instead", ReplaceWith("asF32.add"))
-    fun add(key: ULong, f32Vector: FloatArray)
-
-    @Deprecated("Use explicit add instead", ReplaceWith("asF64.add"))
-    fun add(key: ULong, f64Vector: DoubleArray)
-
     /**
      * Removes the vector associated with the given key from the index.
      * @param key The key of the vector to be removed.
@@ -94,6 +88,13 @@ expect class Index(options: IndexOptions) {
      * @param count upper bound on the number of neighbors to search, the "k" in "kANN".
      */
     fun search(query: FloatArray, count: Int): Matches
+
+    /**
+     *  @brief Checks if the index contains a vector with a specific key.
+     *  @param key The key to be checked.
+     *  @return `true` if the index contains the vector with the given key, `false` otherwise.
+     */
+    operator fun contains(key: ULong): Boolean
 
     /**
      * Loads the index from a file.

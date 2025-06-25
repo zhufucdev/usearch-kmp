@@ -48,14 +48,6 @@ actual class Index(
     actual val dimensions: ULong
         get() = NativeMethods.bridge.usearch_dimensions(ptr).toULong()
 
-    actual fun add(key: ULong, f32Vector: FloatArray) {
-        asF32.add(key, f32Vector)
-    }
-
-    actual fun add(key: ULong, f64Vector: DoubleArray) {
-        asF64.add(key, f64Vector)
-    }
-
     actual fun remove(key: ULong) {
         NativeMethods.bridge.usearch_remove(ptr, key.toLong())
     }
@@ -83,6 +75,8 @@ actual class Index(
             distances.slice(0 until size)
         )
     }
+
+    actual operator fun contains(key: ULong): Boolean = NativeMethods.bridge.usearch_contains(ptr, key.toLong())
 
     actual val size: ULong
         get() = NativeMethods.bridge.usearch_size(ptr).toULong()
