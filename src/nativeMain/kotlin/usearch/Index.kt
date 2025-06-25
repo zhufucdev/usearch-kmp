@@ -32,8 +32,6 @@ actual class Index {
                 }
             } catch (e: IllegalStateException) {
                 println("Error calling usearch_free: ${e.message}")
-            } finally {
-                it.dispose()
             }
         }
     }
