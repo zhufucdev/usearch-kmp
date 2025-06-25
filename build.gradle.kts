@@ -105,7 +105,7 @@ kotlin {
         }
         val jvmMain by getting {
             dependencies {
-                compileOnly(files(headerGenerator.destinationDirectory))
+                implementation(files(headerGenerator.destinationDirectory))
             }
         }
         val jvmTest by getting {
@@ -115,7 +115,7 @@ kotlin {
         }
         val jvmCommonMain by getting {
             kotlin {
-                srcDir(headerGenerator.classpath.singleFile)
+                srcDir(headerGenerator.classpath)
             }
         }
         val nativeMain by getting {

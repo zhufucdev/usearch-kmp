@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(USEARCH_USE_FP16LIB ON)
 include(FetchContent)
 
-FetchContent_Declare(vendor GIT_REPOSITORY https://github.com/unum-cloud/usearch.git GIT_TAG v2.17.7)
+FetchContent_Declare(vendor GIT_REPOSITORY https://github.com/unum-cloud/usearch.git GIT_TAG v2.17.12)
 FetchContent_MakeAvailable(vendor)
 
 if (BUILD_SHARED_LIBS MATCHES ON)
